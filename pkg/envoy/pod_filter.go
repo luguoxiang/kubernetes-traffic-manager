@@ -7,8 +7,8 @@ import (
 	accesslog_filter "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	tp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/types"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/envoy/common"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/kubernetes"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"strings"
 )
 

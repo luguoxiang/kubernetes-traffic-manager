@@ -2,7 +2,7 @@ package annotation
 
 import (
 	"github.com/golang/glog"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/kubernetes"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
 var (

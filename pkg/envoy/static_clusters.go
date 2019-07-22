@@ -7,8 +7,8 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/gogo/protobuf/types"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/envoy/common"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/kubernetes"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"strings"
 	"time"
 )

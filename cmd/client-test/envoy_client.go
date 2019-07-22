@@ -9,8 +9,8 @@ import (
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/client"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/envoy"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/client"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy"
 	"google.golang.org/grpc"
 )
 

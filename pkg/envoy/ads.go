@@ -5,8 +5,8 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/golang/glog"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/envoy/common"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/envoy/ingress"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/ingress"
 	"strings"
 	"time"
 )

@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/golang/glog"
-	"github.com/luguoxiang/k8s-traffic-manager/pkg/kubernetes"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
