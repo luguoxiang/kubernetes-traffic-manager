@@ -43,8 +43,8 @@ func NewHttpPodFilterInfo(pod *kubernetes.PodInfo, port uint32, outboundPodIP bo
 			}
 			cluster := common.OutboundClusterName(service, pod.Namespace(), port)
 			result.Domains[cluster] = []string{
-				fmt.Sprint("%s:%d", service, port),
-				fmt.Sprint("%s:%d.%s", service, port, pod.Namespace()),
+				fmt.Sprintf("%s:%d", service, port),
+				fmt.Sprintf("%s:%d.%s", service, port, pod.Namespace()),
 			}
 		}
 	}

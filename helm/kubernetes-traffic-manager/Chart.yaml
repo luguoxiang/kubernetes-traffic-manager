@@ -1,0 +1,12 @@
+description: Kubernetes traffic manager
+home: https://github.com/luguoxiang/kubernetes-traffic-manager
+keywords:
+- Envoyi Proxy
+- Kubernetes
+maintainers:
+- email: guoxiang.lu@outlook.com
+  name: Guoxiang Lu
+sources:
+- https://github.com/luguoxiang/kubernetes-traffic-manager
+name: kubernetes-traffic-manager
+version: 0.1

@@ -86,18 +86,18 @@ func (manager *EnvoyManager) checkEnvoy(podInfo *kubernetes.PodInfo) {
 		name := manager.dockerClient.GetName(podInfo)
 		exstingProxys, err := manager.dockerClient.ListDockerInstances(name)
 		if err != nil {
-			glog.Warning("Failed to list envoy for %s: %s", podInfo.Name(), err.Error())
+			glog.Warningf("Failed to list envoy for %s: %s", podInfo.Name(), err.Error())
 		} else {
 			for _, envoyProxy := range exstingProxys {
 				if envoyEnabled {
 					annotate := (envoyProxy.ID != podInfo.EnvoyDockerId())
 					if manager.checkEnvoyProxy(envoyProxy.ID, podInfo, annotate) {
 						if annotate {
-							glog.Info("Found exstings envoy %s for %s", envoyProxy.ID, podInfo.Name())
+							glog.Infof("Found exstings envoy %s for %s", envoyProxy.ID, podInfo.Name())
 						}
 						return
 					}
-					glog.Warning("Found stopped envoy %s for %s", envoyProxy.ID, podInfo.Name())
+					glog.Warningf("Found stopped envoy %s for %s", envoyProxy.ID, podInfo.Name())
 				} else {
 					manager.dockerClient.StopDockerInstance(envoyProxy.ID, podInfo.Name())
 					manager.dockerClient.RemoveDockerInstance(envoyProxy.ID, podInfo.Name())

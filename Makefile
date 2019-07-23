@@ -17,10 +17,12 @@ build: vendor
 	go build -v -o envoy-manager cmd/envoy-manager/envoy-manager.go
 
 test: vendor
-	go test -v github.com/luguoxiang/k8s-traffic-manager/pkg/...
+	go test -v github.com/luguoxiang/kubernetes-traffic-manager/pkg/...
 
 build.images: 
-	docker build -t luguoxiang/traffic-manager .
+	docker build -t luguoxiang/envoy-manager -f Dockerfile.envoy .
+	docker build -t luguoxiang/traffic-control -f Dockerfile.control .
 
 push.images: 
-	docker push luguoxiang/traffic-manager
+	docker push luguoxiang/traffic-control
+	docker push luguoxiang/envoy-manager

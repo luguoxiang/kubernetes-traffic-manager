@@ -1,0 +1,58 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: traffic-envoy-manager
+  labels:
+    app: traffic-envoy-manager
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: {{ .Release.Name }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: traffic-envoy-manager
+    spec:
+      serviceAccountName: "traffic-sa"
+      hostNetwork: true
+      containers:
+      - name: traffic-envoy-manager
+        image: "{{ .Values.images.envoyManager }}"
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: dockersock
+          mountPath: /var/run/docker.sock
+          readOnly: true
+        command:
+        - "./envoy-manager"
+        - "-alsologtostderr"   
+        lifecycle:
+          preStop:
+            exec:
+              command: ["./envoy-tools", "-remove"]
+        env:
+        - name: DOCKER_API_VERSION
+          value: "1.24"
+        - name: ENVOY_PROXY_IMAGE
+          value: "{{ .Values.images.envoyProxy }}"
+        - name: ENVOY_PROXY_PORT
+          value: {{ .Values.port.envoyProxy | quote }}
+        - name: CONTROL_PLANE_PORT
+          value: {{ .Values.port.trafficControl | quote }}
+        - name: CONTROL_PLANE_SERVICE
+          value: "traffic-control"
+        - name: ENVOY_PROXY_MANGE_PORT
+          value: {{ .Values.port.envoyAdmin | quote }}
+        - name: ENVOY_PROXY_UID
+          value: {{ .Values.proxy.uid | quote }}          
+        - name: ENVOY_ZIPKIN_SERVICE
+          value: "traffic-zipkin"
+        - name: ENVOY_ZIPKIN_PORT
+          value: {{ .Values.port.trafficZipkin | quote }}          
+        - name: MY_HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+      volumes:
+      - name: dockersock
+        hostPath:
+          path: /var/run/docker.sock

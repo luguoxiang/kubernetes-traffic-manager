@@ -1,0 +1,13 @@
+images:
+  envoyProxy: docker.io/luguoxiang/traffic-envoy-proxy:0.1
+  trafficControl: docker.io/luguoxiang/traffic-control
+  envoyManager: docker.io/luguoxiang/envoy-manager
+  
+port:
+  trafficControl: 18000
+  envoyAdmin: 8900
+  envoyProxy: 10000
+  trafficZipkin: 9411
+
+proxy:
+  uid: 1337

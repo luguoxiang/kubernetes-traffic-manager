@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: traffic-zipkin
+  labels:
+    app: traffic-zipkin
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: {{ .Release.Name }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: traffic-zipkin
+    spec:
+      containers:
+      - name: traffic-zipkin
+        image: openzipkin/zipkin:2.11
+        ports:
+        - containerPort: {{ .Values.port.trafficZipkin }}
+          name: zipkin

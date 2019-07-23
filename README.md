@@ -1,4 +1,4 @@
-# traffic-agent
+# envoy-manager
 Responsible to start/stop envoy container for traffic-control
 
 When user label a service with "traffic.envoy.enabled=true", traffic-agent will start a docker instance of "envoyproxy/envoy" image. 
