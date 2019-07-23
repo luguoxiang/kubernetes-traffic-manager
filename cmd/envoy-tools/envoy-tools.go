@@ -54,6 +54,7 @@ func main() {
 	remove := flag.Bool("remove", false, "remove envoy docker instances")
 	id := flag.String("id", "", "docker id")
 	log := flag.Bool("log", false, "show envoy logs")
+	cmd := flag.String("exec", "", "docker exec command")
 	flag.Parse()
 
 	dockerClient, err := docker.NewSimpleDockerClient()
@@ -77,6 +78,14 @@ func main() {
 			panic("Could not found docker with id " + *id)
 			return
 		}
+		if *cmd != "" {
+			output, err := dockerClient.Execute(found.ID, *cmd)
+			if err != nil {
+				panic(err.Error())
+			}
+			fmt.Println(output)
+			return
+		}
 		if *log {
 			reader, err := dockerClient.GetDockerInstanceLog(found.ID)
 			if err != nil {
@@ -91,13 +100,17 @@ func main() {
 		instances = []*docker.DockerInstanceInfo{found}
 	} else if *log {
 		panic("-log must be used with -id")
+	} else if *cmd != "" {
+		panic("-exec must be used with -id")
 	}
 	if *remove {
 		for _, instance := range instances {
 			dockerClient.StopDockerInstance(instance.ID, instance.Pod)
 			dockerClient.RemoveDockerInstance(instance.ID, instance.Pod)
 		}
+		return
 	}
+
 	if *list {
 		out := NewTabWriterOutput()
 		for _, instance := range instances {

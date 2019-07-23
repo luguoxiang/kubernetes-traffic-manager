@@ -263,3 +263,29 @@ func (client *DockerClient) RemoveDockerInstance(dockerId string, podName string
 		glog.Infof("Removed container %s for %s", dockerId, podName)
 	}
 }
+
+func (client *DockerClient) Execute(dockerId string, command string) (string, error) {
+	ctx := context.Background()
+
+	execConfig := types.ExecConfig{
+		Tty:          false,
+		AttachStderr: true,
+		AttachStdin:  false,
+		AttachStdout: true,
+		Cmd:          strings.Split(command, " "),
+	}
+	respIdExecCreate, err := client.client.ContainerExecCreate(ctx, dockerId, execConfig)
+	if err != nil {
+		fmt.Println(err)
+	}
+	respId, err := client.client.ContainerExecAttach(ctx, respIdExecCreate.ID, execConfig)
+	if err != nil {
+		return "", err
+	}
+	buf := make([]byte, 4096)
+	count, err := respId.Reader.Read(buf)
+	if err != nil {
+		return err.Error(), nil
+	}
+	return string(buf[0:count]), nil
+}
