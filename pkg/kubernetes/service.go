@@ -34,29 +34,16 @@ func (service *ServiceInfo) IsKubeAPIService() bool {
 }
 
 func (service *ServiceInfo) OutboundEnabled() bool {
-	if service.EnvoyEnabled() || service.IsKubeAPIService() {
+	if service.IsKubeAPIService() {
 		return true
 	}
 
-	if service.Labels != nil {
-		return strings.EqualFold(service.Labels[OUTBOUND_ENABLED], "true")
-	}
-	return false
-}
-
-func (service *ServiceInfo) EnvoyEnabled() bool {
-	if service.Labels != nil {
-		return strings.EqualFold(service.Labels[ENVOY_ENABLED], "true")
-	}
-	return false
+	return strings.EqualFold(service.Labels[OUTBOUND_ENABLED], "true")
 }
 
 func (service *ServiceInfo) IsHttp(port uint32) bool {
-	key := AnnotationPortProtocol(port)
-	if service.Annotations != nil {
-		return strings.EqualFold(service.Annotations[key], "http")
-	}
-	return false
+	key := ServicePortProtocol(port)
+	return strings.EqualFold(service.Labels[key], "http")
 }
 
 func (service *ServiceInfo) Name() string {
@@ -73,7 +60,7 @@ func (service *ServiceInfo) GetSelector() map[string]string {
 
 func (service *ServiceInfo) String() string {
 	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("Service %s@%s EnvoyEnabled=%v,Port=", service.name, service.namespace, service.EnvoyEnabled()))
+	buffer.WriteString(fmt.Sprintf("Service %s@%s OutboundEnabled=%v,Port=", service.name, service.namespace, service.OutboundEnabled()))
 	for _, port := range service.Ports {
 		buffer.WriteString(fmt.Sprintf("%d", port.Port))
 		buffer.WriteString(" ")
@@ -92,6 +79,12 @@ func NewServiceInfo(service *v1.Service) *ServiceInfo {
 		ClusterIP:       service.Spec.ClusterIP,
 		Annotations:     service.Annotations,
 		ResourceVersion: service.ResourceVersion,
+	}
+	if info.Labels == nil {
+		info.Labels = map[string]string{}
+	}
+	if info.Annotations == nil {
+		info.Annotations = map[string]string{}
 	}
 	for _, port := range service.Spec.Ports {
 		var targetPort uint32
@@ -143,20 +136,4 @@ func (manager *K8sResourceManager) UpdateServiceAnnotation(serviceInfo *ServiceI
 		time.Sleep(1 * time.Second)
 	}
 	return err
-}
-
-func (manager *K8sResourceManager) AnnotatePortHTTP(info *ServiceInfo, port *ServicePortInfo) {
-	annotationName := AnnotationPortProtocol(port.Port)
-
-	if strings.TrimSpace(info.Annotations[annotationName]) != "" {
-		//if the service is already annotated, do not replace the annotation
-		return
-	}
-	manager.Lock()
-	defer manager.Unlock()
-
-	protocol := "http"
-	go manager.UpdateServiceAnnotation(info, map[string]*string{
-		annotationName: &protocol,
-	})
 }

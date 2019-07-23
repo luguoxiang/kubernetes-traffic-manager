@@ -21,7 +21,7 @@ type PodFilterInfo struct {
 }
 
 func NewPodFilterInfo(pod *kubernetes.PodInfo, port uint32, outboundPodIP bool) *PodFilterInfo {
-	inboundPodIP := pod.Annotations[kubernetes.ENDPOINT_INBOUND_PODIP]
+	inboundPodIP := pod.Labels[kubernetes.ENDPOINT_INBOUND_PODIP]
 	return &PodFilterInfo{
 		port:         port,
 		podIP:        pod.PodIP,

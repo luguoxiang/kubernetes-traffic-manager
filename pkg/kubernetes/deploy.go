@@ -99,5 +99,8 @@ func NewDeploymentInfo(obj interface{}) *DeploymentInfo {
 		}
 	}
 	result.HostNetwork = template.Spec.HostNetwork
+	if result.Labels == nil {
+		result.Labels = map[string]string{}
+	}
 	return result
 }

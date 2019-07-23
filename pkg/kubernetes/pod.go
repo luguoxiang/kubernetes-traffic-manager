@@ -41,14 +41,10 @@ func (pod *PodInfo) Weight() uint32 {
 
 func (pod *PodInfo) EnvoyEnabled() bool {
 	if pod.Labels[ENVOY_ENABLED] != "" {
-		//ENVOY_ENABLED label will overide annotation set by deployment label
+		//ENVOY_ENABLED label will overide annotation set by deployment & service label
 		return strings.EqualFold(pod.Labels[ENVOY_ENABLED], "true")
 	}
-	for k, v := range pod.Annotations {
-		if strings.HasPrefix(k, POD_SERVICE_PREFIX) && strings.HasSuffix(k, ".envoy") && strings.EqualFold(v, "true") {
-			return true
-		}
-	}
+
 	return strings.EqualFold(pod.Annotations[ENVOY_ENABLED_BY_DEPLOYMENT], "true")
 }
 
@@ -82,7 +78,7 @@ func GetServiceAndPort(annotation string) (string, uint32) {
 }
 
 func (pod *PodInfo) IsHeadlessService(service string) bool {
-	headlessKey := PodHeadlessAnnotationByServiceKey(service)
+	headlessKey := PodHeadlessByService(service)
 	return strings.EqualFold(pod.Annotations[headlessKey], "true")
 }
 
@@ -95,7 +91,7 @@ func (pod *PodInfo) GetPortMap() map[uint32]PodPortInfo {
 			oldInfo.Port = port
 			// do not override http protocol and headless
 			if !oldInfo.Headless {
-				headlessKey := PodHeadlessAnnotationByServiceKey(service)
+				headlessKey := PodHeadlessByService(service)
 				oldInfo.Headless = strings.EqualFold(pod.Annotations[headlessKey], "true")
 			}
 			if v != "" && (oldInfo.Protocol == "" || oldInfo.Protocol == "tcp") {
@@ -105,18 +101,6 @@ func (pod *PodInfo) GetPortMap() map[uint32]PodPortInfo {
 		}
 	}
 	return result
-}
-
-func PodPortAnnotationByServiceKey(svc string, port uint32) string {
-	return fmt.Sprintf("%s%s.port.%d", POD_SERVICE_PREFIX, svc, port)
-}
-
-func PodEnvoyAnnotationByServiceKey(svc string) string {
-	return fmt.Sprintf("%s%s.envoy", POD_SERVICE_PREFIX, svc)
-}
-
-func PodHeadlessAnnotationByServiceKey(svc string) string {
-	return fmt.Sprintf("%s%s.headless", POD_SERVICE_PREFIX, svc)
 }
 
 func (pod *PodInfo) GetSelector() map[string]string {

@@ -21,8 +21,8 @@ const (
 	ENDPOINT_WEIGHT             = "traffic.endpoint.weight"
 	ENDPOINT_INBOUND_PODIP      = "traffic.endpoint.inbound.use_podip"
 	DEFAULT_WEIGHT              = 100
-	PORT_PROTOCOL_PREFIX        = "traffic.svc.port."
-	POD_SERVICE_PREFIX          = "traffic.svc."
+
+	POD_SERVICE_PREFIX = "traffic.svc."
 )
 
 func GetLabelValueUInt32(value string) uint32 {
@@ -51,8 +51,20 @@ func GetLabelValueInt64(value string) int64 {
 	return int64(i)
 }
 
-func AnnotationPortProtocol(port uint32) string {
-	return fmt.Sprintf("%s%d", PORT_PROTOCOL_PREFIX, port)
+func ServicePortProtocol(port uint32) string {
+	return fmt.Sprintf("traffic.port.%d", port)
+}
+
+func PodPortProtcolByService(svc string, port uint32) string {
+	return fmt.Sprintf("%s%s.port.%d", POD_SERVICE_PREFIX, svc, port)
+}
+
+func PodEnvoyByService(svc string) string {
+	return fmt.Sprintf("%s%s.envoy", POD_SERVICE_PREFIX, svc)
+}
+
+func PodHeadlessByService(svc string) string {
+	return fmt.Sprintf("%s%s.headless", POD_SERVICE_PREFIX, svc)
 }
 
 func (e ResourceType) String() string {
@@ -74,7 +86,6 @@ type ResourceInfoPointer interface {
 	Name() string
 	Type() ResourceType
 	String() string
-	EnvoyEnabled() bool
 }
 
 func (manager *K8sResourceManager) addResource(resource ResourceInfoPointer) {

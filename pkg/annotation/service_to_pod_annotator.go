@@ -26,11 +26,10 @@ func (pa *ServiceToPodAnnotator) PodValid(pod *kubernetes.PodInfo) bool {
 
 func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
 	annotations := map[string]*string{
-		kubernetes.PodHeadlessAnnotationByServiceKey(svc.Name()): nil,
-		kubernetes.PodEnvoyAnnotationByServiceKey(svc.Name()):    nil,
+		kubernetes.PodHeadlessByService(svc.Name()): nil,
 	}
 	for _, port := range svc.Ports {
-		key := kubernetes.PodPortAnnotationByServiceKey(svc.Name(), port.Port)
+		key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
 		annotations[key] = nil
 	}
 	err := pa.k8sManager.UpdatePodAnnotation(pod, annotations)
@@ -44,34 +43,21 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 	var key string
 	for _, port := range svc.Ports {
 		var value string
-		svc_key := kubernetes.AnnotationPortProtocol(port.Port)
-		key = kubernetes.PodPortAnnotationByServiceKey(svc.Name(), port.Port)
-		if svc.Annotations != nil && svc.Annotations[svc_key] != "" {
-			value = svc.Annotations[svc_key]
+		svc_key := kubernetes.ServicePortProtocol(port.Port)
+		if svc.Labels[svc_key] != "" {
+			value = svc.Labels[svc_key]
 		} else {
 			value = "tcp"
 		}
+		key = kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
 		annotations[key] = &value
 	}
 
 	if svc.ClusterIP == "None" {
-		key = kubernetes.PodHeadlessAnnotationByServiceKey(svc.Name())
+		key = kubernetes.PodHeadlessByService(svc.Name())
 		annotations[key] = &TRUE_STR
-	}
-	key = kubernetes.PodEnvoyAnnotationByServiceKey(svc.Name())
-	if svc.EnvoyEnabled() {
-		annotations[key] = &TRUE_STR
-	} else {
-		annotations[key] = &FALSE_STR
 	}
 
-	if svc.Labels != nil {
-		//propagate service labels to pod
-		lvalue := svc.Labels[kubernetes.ENDPOINT_INBOUND_PODIP]
-		if lvalue != "" {
-			annotations[kubernetes.ENDPOINT_INBOUND_PODIP] = &lvalue
-		}
-	}
 	if len(annotations) == 0 {
 		return
 	}

@@ -20,7 +20,10 @@ func (annotator *DeploymentToPodAnnotator) PodValid(pod *kubernetes.PodInfo) boo
 }
 
 func (annotator *DeploymentToPodAnnotator) removeDeploymentAnnotateToPod(pod *kubernetes.PodInfo, deployment *kubernetes.DeploymentInfo) {
-	annotations := map[string]*string{kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT: nil}
+	annotations := map[string]*string{
+		kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT: nil,
+		kubernetes.ENDPOINT_WEIGHT:             nil,
+	}
 	err := annotator.k8sManager.UpdatePodAnnotation(pod, annotations)
 	if err != nil {
 		glog.Infof("Annotate pod %s with %v failed: %s", pod.Name(), annotations, err.Error())
@@ -30,17 +33,15 @@ func (annotator *DeploymentToPodAnnotator) removeDeploymentAnnotateToPod(pod *ku
 func (annotator *DeploymentToPodAnnotator) addDeploymentAnnotateToPod(pod *kubernetes.PodInfo, deployment *kubernetes.DeploymentInfo) {
 	annotations := map[string]*string{}
 
-	if deployment.Labels != nil {
-		//propagate deployment labels to pod
-		for _, key := range []string{kubernetes.ENDPOINT_WEIGHT, kubernetes.ENVOY_ENABLED} {
-			value := deployment.Labels[key]
-			if value != "" {
-				if key == kubernetes.ENVOY_ENABLED {
-					key = kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT
-				}
-				annotations[key] = &value
-			}
-		}
+	//propagate deployment labels to pod
+	value := deployment.Labels[kubernetes.ENDPOINT_WEIGHT]
+	if value != "" {
+		annotations[kubernetes.ENDPOINT_WEIGHT] = &value
+	}
+
+	value = deployment.Labels[kubernetes.ENVOY_ENABLED]
+	if value != "" {
+		annotations[kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT] = &value
 	}
 
 	if len(annotations) == 0 {
