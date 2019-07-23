@@ -6,8 +6,13 @@ import (
 )
 
 var (
-	TRUE_STR  = "true"
-	FALSE_STR = "false"
+	TRUE_STR                   = "true"
+	FALSE_STR                  = "false"
+	HeadlessServiceAnnotations = []string{
+		"traffic.connection.timeout",
+		"traffic.retries.max",
+		"traffic.connection.max",
+		"traffic.request.max-pending"}
 )
 
 type ServiceToPodAnnotator struct {
@@ -56,6 +61,13 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 	if svc.ClusterIP == "None" {
 		key = kubernetes.PodHeadlessByService(svc.Name())
 		annotations[key] = &TRUE_STR
+
+		for _, key := range HeadlessServiceAnnotations {
+			if svc.Labels[key] != "" {
+				value := svc.Labels[key]
+				annotations[key] = &value
+			}
+		}
 	}
 
 	if len(annotations) == 0 {

@@ -8,7 +8,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/annotation"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/ingress"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"google.golang.org/grpc"
 	"net"
@@ -50,19 +49,18 @@ func main() {
 	cds := envoy.NewClustersControlPlaneService(k8sManager)
 	eds := envoy.NewEndpointsControlPlaneService(k8sManager)
 	lds := envoy.NewListenersControlPlaneService(k8sManager)
-	ingressLds := ingress.NewIngressListenersControlPlaneService(k8sManager)
 	sds := envoy.NewSecretsControlPlaneService(k8sManager)
 
 	serviceToPodAnnotator := annotation.NewServiceToPodAnnotator(k8sManager)
 	deploymentToPodAnnotator := annotation.NewDeploymentToPodAnnotator(k8sManager)
 
-	ads := envoy.NewAggregatedDiscoveryService(cds, eds, lds, ingressLds, sds)
+	ads := envoy.NewAggregatedDiscoveryService(cds, eds, lds, sds)
 
 	discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, ads)
 
 	stopper := make(chan struct{})
 	go k8sManager.WatchPods(stopper, k8sManager, eds, cds, lds, deploymentToPodAnnotator, serviceToPodAnnotator)
-	go k8sManager.WatchServices(stopper, k8sManager, cds, lds, serviceToPodAnnotator, ingressLds)
+	go k8sManager.WatchServices(stopper, k8sManager, cds, lds, serviceToPodAnnotator)
 	go k8sManager.WatchDeployments(stopper, k8sManager, deploymentToPodAnnotator)
 	go k8sManager.WatchStatefulSets(stopper, k8sManager, deploymentToPodAnnotator)
 	go k8sManager.WatchDaemonSets(stopper, k8sManager, deploymentToPodAnnotator)

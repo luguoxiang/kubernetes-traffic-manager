@@ -42,11 +42,11 @@ func (cps *ClustersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo
 	for _, port := range svc.Ports {
 		if svc.IsKubeAPIService() {
 			cluster := NewByPassClusterInfo(svc, port.Port)
-			cluster.configCluster(svc)
+			cluster.ConfigCluster(svc.Labels)
 			cps.UpdateResource(cluster, svc.ResourceVersion)
-		} else if svc.Labels[kubernetes.ServicePortProtocol(port.Port)] != "" {
+		} else if svc.Protocol(port.Port) != "" {
 			cluster := NewOutboundClusterInfo(svc, port.Port)
-			cluster.configCluster(svc)
+			cluster.ConfigCluster(svc.Labels)
 			cps.UpdateResource(cluster, svc.ResourceVersion)
 		}
 
@@ -67,4 +67,34 @@ func (cps *ClustersControlPlaneService) ServiceUpdated(oldService, newService *k
 	} else {
 		cps.ServiceAdded(newService)
 	}
+}
+
+func (cps *ClustersControlPlaneService) PodValid(pod *kubernetes.PodInfo) bool {
+	//Hostnetwork pod should not have envoy enabled, so there will be no inbound cluster for it
+	return !pod.HostNetwork && pod.PodIP != ""
+}
+
+func (cps *ClustersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
+	for port, _ := range pod.GetPortMap() {
+		cluster := NewStaticLocalClusterInfo(port)
+		cps.UpdateResource(cluster, "1")
+
+		if pod.HasHeadlessService() {
+			cluster = NewStaticClusterInfo(pod.PodIP, port)
+			cluster.ConfigCluster(pod.Annotations)
+			cps.UpdateResource(cluster, pod.ResourceVersion)
+		}
+	}
+}
+func (cps *ClustersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
+	if !pod.HasHeadlessService() {
+		return
+	}
+	for port, _ := range pod.GetPortMap() {
+		cluster := NewStaticClusterInfo(pod.PodIP, port)
+		cps.UpdateResource(cluster, "")
+	}
+}
+func (cps *ClustersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
+	cps.PodAdded(newPod)
 }

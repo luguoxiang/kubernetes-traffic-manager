@@ -14,22 +14,24 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
-type HttpPodFilterInfo struct {
-	PodFilterInfo
+type HttpPodIngressFilterInfo struct {
+	PodIngressFilterInfo
 	IngressTracing bool
 	Domains        map[string][]string
 }
 
-func NewHttpPodFilterInfo(pod *kubernetes.PodInfo, port uint32, outboundPodIP bool) ListenerInfo {
-	inBoundInfo := NewPodFilterInfo(pod, port, outboundPodIP)
-	result := &HttpPodFilterInfo{
-		PodFilterInfo:  *inBoundInfo,
-		IngressTracing: true,
+func NewHttpPodIngressFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool) ListenerInfo {
+	inBoundInfo := NewPodIngressFilterInfo(pod, port, headless)
+	result := &HttpPodIngressFilterInfo{
+		PodIngressFilterInfo: *inBoundInfo,
+		IngressTracing:       true,
 	}
-	for k, v := range pod.Labels {
-		switch k {
-		case "traffic.envoy.tracing.ingress":
-			result.IngressTracing = kubernetes.GetLabelValueBool(v)
+	if !headless {
+		for k, v := range pod.Labels {
+			switch k {
+			case "traffic.envoy.tracing.ingress":
+				result.IngressTracing = kubernetes.GetLabelValueBool(v)
+			}
 		}
 	}
 	for key, _ := range pod.Annotations {
@@ -51,11 +53,11 @@ func NewHttpPodFilterInfo(pod *kubernetes.PodInfo, port uint32, outboundPodIP bo
 	return result
 }
 
-func (info *HttpPodFilterInfo) String() string {
+func (info *HttpPodIngressFilterInfo) String() string {
 	return fmt.Sprintf("%s:%d, tracing=%v", info.podIP, info.port, info.IngressTracing)
 }
 
-func (info *HttpPodFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *HttpPodIngressFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
 	defaultClusterName := info.getClusterName(node.Id)
 	if defaultClusterName == "" {
 		return listener.FilterChain{}, nil

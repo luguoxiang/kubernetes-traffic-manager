@@ -12,15 +12,15 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
-type OutboundFilterInfo struct {
+type EgressFilterInfo struct {
 	clusterIP string
 	service   string
 	namespace string
 	port      uint32
 }
 
-func NewOutboundFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *OutboundFilterInfo {
-	return &OutboundFilterInfo{
+func NewEgressFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *EgressFilterInfo {
+	return &EgressFilterInfo{
 		port:      port,
 		clusterIP: svc.ClusterIP,
 		service:   svc.Name(),
@@ -28,22 +28,22 @@ func NewOutboundFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *OutboundFi
 	}
 }
 
-func (info *OutboundFilterInfo) String() string {
+func (info *EgressFilterInfo) String() string {
 	return fmt.Sprintf("%s, clusterIp=%v", info.Name(), info.clusterIP)
 }
 
-func (info *OutboundFilterInfo) Type() string {
+func (info *EgressFilterInfo) Type() string {
 	return common.ListenerResource
 }
-func (info *OutboundFilterInfo) Name() string {
+func (info *EgressFilterInfo) Name() string {
 	return info.ClusterName()
 }
 
-func (info *OutboundFilterInfo) ClusterName() string {
+func (info *EgressFilterInfo) ClusterName() string {
 	return common.OutboundClusterName(info.service, info.namespace, info.port)
 }
 
-func (info *OutboundFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *EgressFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
 	tcpProxy := &tcp.TcpProxy{
 		StatPrefix: info.Name(),
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{

@@ -29,12 +29,26 @@ kubectl label svc productpage details ratings reviews traffic.port.9080=http
 ```
 
 # Configuration
-## Labels
+e# Labels
+| Pod | traffic.endpoint.inbound.use_podip | Bool | if true, envoy will use pod ip instead of 127.0.0.1 to access attached pod |
 | Resource | Labels | Value | Description |
 |----------|--------|--------|------------|
-| Pod | traffic.endpoint.inbound.use_podip | Bool | if true, envoy will use pod ip instead of 127.0.0.1 to access attached pod |
 | Pod | traffic.envoy.enabled | Bool | whether enable envoy docker for pod |
+| Pod | traffic.tracing.ingress | Bool | enable tracing for requests to this pod |
 | Service | traffic.port.(port number)| http, tcp | protocol for the port on service, default is tcp |
+| Service | traffic.connection.timeout |timeout in miliseconds | |
+| Service | traffic.retries.max | max retries number | |
+| Service | traffic.connection.max | max number of connection | |
+| Service | traffic.request.max-pending | max pending requests | |
+| Service | traffic.tracing.egress | bool | enable tracing for requests to this service | 
+| Service | traffic.request.timeout | timeout in miliseconds | |
+| Service | traffic.retries.5xx | Number | number of retries for 5xx error | 
+| Service | traffic.retries.connect-failure | Number | |
+| Service | traffic.retries.gateway-error | Number | |
+| Service | traffic.fault.delay.time | delay time in miliseconds | |
+| Service | traffic.fault.delay.percentage | number | percentage of requests to be delayed for time |
+| Service | traffic.fault.abort.status | http status | abort with status |
+| Service | traffic.fault.abort.percentage | number | percentage of requests to be aborted |
 | Deployment | traffic.endpoint.weight | Number in [0-128] | weight value for the pods of this deployment  |
 | Deployment | traffic.envoy.enabled | Bool | hether enable envoy docker for the pods of this deployment |
 

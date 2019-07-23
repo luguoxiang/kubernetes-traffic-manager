@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type PodFilterInfo struct {
+type PodIngressFilterInfo struct {
 	podIP         string
 	node          string
 	port          uint32
@@ -20,38 +20,32 @@ type PodFilterInfo struct {
 	OutboundPodIP bool
 }
 
-func NewPodFilterInfo(pod *kubernetes.PodInfo, port uint32, outboundPodIP bool) *PodFilterInfo {
-	inboundPodIP := pod.Labels[kubernetes.ENDPOINT_INBOUND_PODIP]
-	return &PodFilterInfo{
-		port:         port,
-		podIP:        pod.PodIP,
-		node:         fmt.Sprintf("%s.%s", pod.Name(), pod.Namespace()),
-		InboundPodIP: strings.EqualFold(inboundPodIP, "true"),
+func NewPodIngressFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool) *PodIngressFilterInfo {
+	return &PodIngressFilterInfo{
+		port:  port,
+		podIP: pod.PodIP,
+		node:  fmt.Sprintf("%s.%s", pod.Name(), pod.Namespace()),
 		//the pod belongs to a headless service, need to listen on pod ip
-		OutboundPodIP: outboundPodIP,
+		OutboundPodIP: headless,
 	}
 }
 
-func (info *PodFilterInfo) String() string {
+func (info *PodIngressFilterInfo) String() string {
 	return fmt.Sprintf("%s:%d", info.node, info.port)
 }
 
-func (info *PodFilterInfo) Type() string {
+func (info *PodIngressFilterInfo) Type() string {
 	return common.ListenerResource
 }
 
-func (info *PodFilterInfo) Name() string {
+func (info *PodIngressFilterInfo) Name() string {
 	return fmt.Sprintf("%d|%s.static", info.port, strings.Replace(info.node, ".", "_", -1))
 }
 
-func (info *PodFilterInfo) getClusterName(nodeId string) string {
+func (info *PodIngressFilterInfo) getClusterName(nodeId string) string {
 	if nodeId == info.node {
-		if info.InboundPodIP {
-			return StaticClusterName(info.podIP, info.port)
-		} else {
-			//use local loop interface to access local workload
-			return StaticClusterName("127.0.0.1", info.port)
-		}
+		//use local loop interface to access local workload
+		return StaticLocalClusterName(info.port)
 	} else {
 		if info.OutboundPodIP {
 			return StaticClusterName(info.podIP, info.port)
@@ -60,7 +54,7 @@ func (info *PodFilterInfo) getClusterName(nodeId string) string {
 	return ""
 }
 
-func (info *PodFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *PodIngressFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
 	clusterName := info.getClusterName(node.Id)
 	if clusterName == "" {
 		return listener.FilterChain{}, nil

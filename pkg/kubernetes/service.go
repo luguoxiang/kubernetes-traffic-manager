@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 	"time"
 )
 
@@ -33,9 +32,9 @@ func (service *ServiceInfo) IsKubeAPIService() bool {
 	return service.Name() == "kubernetes" && service.Namespace() == "default"
 }
 
-func (service *ServiceInfo) IsHttp(port uint32) bool {
+func (service *ServiceInfo) Protocol(port uint32) string {
 	key := ServicePortProtocol(port)
-	return strings.EqualFold(service.Labels[key], "http")
+	return service.Labels[key]
 }
 
 func (service *ServiceInfo) Name() string {

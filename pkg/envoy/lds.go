@@ -51,10 +51,11 @@ func (cps *ListenersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInf
 func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	var info common.EnvoyResource
 	for _, port := range svc.Ports {
-		if svc.IsHttp(port.Port) {
-			info = NewHttpOutboundFilterInfo(svc, port.Port)
-		} else {
-			info = NewOutboundFilterInfo(svc, port.Port)
+		protocol := svc.Protocol(port.Port)
+		if protocol == "http" {
+			info = NewHttpEgressFilterInfo(svc, port.Port)
+		} else if protocol != "" {
+			info = NewEgressFilterInfo(svc, port.Port)
 		}
 		cps.UpdateResource(info, svc.ResourceVersion)
 	}
@@ -62,10 +63,9 @@ func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInf
 func (cps *ListenersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
 	var info common.EnvoyResource
 	for _, port := range svc.Ports {
-		if svc.IsHttp(port.Port) {
-			info = NewHttpOutboundFilterInfo(svc, port.Port)
-		} else {
-			info = NewOutboundFilterInfo(svc, port.Port)
+		protocol := svc.Protocol(port.Port)
+		if protocol != "" {
+			info = NewEgressFilterInfo(svc, port.Port)
 		}
 		cps.UpdateResource(info, "")
 	}
@@ -87,11 +87,10 @@ func (manager *ListenersControlPlaneService) PodValid(pod *kubernetes.PodInfo) b
 func (cps *ListenersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
 	var info common.EnvoyResource
 	for port, portInfo := range pod.GetPortMap() {
-		//for pod belonging to headless service, define a pod ip listener for outbound access
 		if portInfo.Protocol == "http" {
-			info = NewHttpPodFilterInfo(pod, port, portInfo.Headless)
+			info = NewHttpPodIngressFilterInfo(pod, port, portInfo.Headless)
 		} else {
-			info = NewPodFilterInfo(pod, port, portInfo.Headless)
+			info = NewPodIngressFilterInfo(pod, port, portInfo.Headless)
 		}
 		cps.UpdateResource(info, pod.ResourceVersion)
 	}
@@ -100,7 +99,7 @@ func (cps *ListenersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
 func (cps *ListenersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
 	var info common.EnvoyResource
 	for port, portInfo := range pod.GetPortMap() {
-		info = NewPodFilterInfo(pod, port, portInfo.Headless)
+		info = NewPodIngressFilterInfo(pod, port, portInfo.Headless)
 		cps.UpdateResource(info, "")
 	}
 }
@@ -111,16 +110,16 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	var info common.EnvoyResource
 	for port, portInfo := range newPod.GetPortMap() {
 		if portInfo.Protocol == "http" {
-			info = NewHttpPodFilterInfo(newPod, port, portInfo.Headless)
+			info = NewHttpPodIngressFilterInfo(newPod, port, portInfo.Headless)
 		} else {
-			info = NewPodFilterInfo(newPod, port, portInfo.Headless)
+			info = NewPodIngressFilterInfo(newPod, port, portInfo.Headless)
 		}
 		visited[info.Name()] = true
 		cps.UpdateResource(info, newPod.ResourceVersion)
 	}
 
 	for port, portInfo := range oldPod.GetPortMap() {
-		info = NewPodFilterInfo(oldPod, port, portInfo.Headless)
+		info = NewPodIngressFilterInfo(oldPod, port, portInfo.Headless)
 		if visited[info.Name()] {
 			continue
 		}

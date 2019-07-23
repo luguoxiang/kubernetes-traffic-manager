@@ -18,7 +18,6 @@ const (
 	ENVOY_ENABLED_BY_DEPLOYMENT = "traffic.envoy.deployment.enabled"
 	ENVOY_PROXY_ANNOTATION      = "traffic.envoy.proxy"
 	ENDPOINT_WEIGHT             = "traffic.endpoint.weight"
-	ENDPOINT_INBOUND_PODIP      = "traffic.endpoint.inbound.use_podip"
 	DEFAULT_WEIGHT              = 100
 
 	POD_SERVICE_PREFIX = "traffic.svc."

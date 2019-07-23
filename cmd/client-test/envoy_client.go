@@ -10,7 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/client"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy"
+	envoy "github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"google.golang.org/grpc"
 )
 

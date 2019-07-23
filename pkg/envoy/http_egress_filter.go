@@ -18,8 +18,8 @@ import (
 	"time"
 )
 
-type HttpOutboundFilterInfo struct {
-	OutboundFilterInfo
+type HttpEgressFilterInfo struct {
+	EgressFilterInfo
 
 	EgressTracing  bool
 	RequestTimeout time.Duration
@@ -33,11 +33,11 @@ type HttpOutboundFilterInfo struct {
 	FaultInjectionAbortStatus     uint32
 }
 
-func NewHttpOutboundFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpOutboundFilterInfo {
-	outboundListenerInfo := NewOutboundFilterInfo(svc, port)
-	info := &HttpOutboundFilterInfo{
-		OutboundFilterInfo: *outboundListenerInfo,
-		EgressTracing:      true,
+func NewHttpEgressFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpEgressFilterInfo {
+	egressListenerInfo := NewEgressFilterInfo(svc, port)
+	info := &HttpEgressFilterInfo{
+		EgressFilterInfo: *egressListenerInfo,
+		EgressTracing:    true,
 	}
 
 	info.FaultInjectionAbortStatus = 503
@@ -45,29 +45,26 @@ func NewHttpOutboundFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpOu
 
 	for k, v := range svc.Labels {
 		switch k {
-		case "traffic.envoy.tracing.egress":
+		case "traffic.tracing.egress":
 			info.EgressTracing = kubernetes.GetLabelValueBool(v)
-		case "traffic.envoy.request.timeout":
+		case "traffic.request.timeout":
 			info.RequestTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
-		case "traffic.envoy.retries.5xx":
+		case "traffic.retries.5xx":
 			info.RetryOn = "5xx"
 			info.RetryTimes = kubernetes.GetLabelValueUInt32(v)
-		case "traffic.envoy.retries.connect-failure":
+		case "traffic.retries.connect-failure":
 			info.RetryOn = "connect-failure"
 			info.RetryTimes = kubernetes.GetLabelValueUInt32(v)
-		case "traffic.envoy.retries.gateway-error":
+		case "traffic.retries.gateway-error":
 			info.RetryOn = "gateway-error"
 			info.RetryTimes = kubernetes.GetLabelValueUInt32(v)
-		case "traffic.envoy.retries.retriable-4xx":
-			info.RetryOn = "retriable-4xx"
-			info.RetryTimes = kubernetes.GetLabelValueUInt32(v)
-		case "traffic.envoy.fault.delay.time":
+		case "traffic.fault.delay.time":
 			info.FaultInjectionFixDelay = time.Duration(kubernetes.GetLabelValueUInt32(v)) * time.Microsecond
-		case "traffic.envoy.fault.delay.percentage":
+		case "traffic.fault.delay.percentage":
 			info.FaultInjectionFixDelayPercentage = kubernetes.GetLabelValueUInt32(v)
-		case "traffic.envoy.fault.abort.status":
+		case "traffic.fault.abort.status":
 			info.FaultInjectionAbortStatus = kubernetes.GetLabelValueUInt32(v)
-		case "traffic.envoy.fault.abort.percentage":
+		case "traffic.fault.abort.percentage":
 			info.FaultInjectionAbortPercentage = kubernetes.GetLabelValueUInt32(v)
 		}
 	}
@@ -75,11 +72,11 @@ func NewHttpOutboundFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpOu
 	return info
 }
 
-func (info *HttpOutboundFilterInfo) String() string {
+func (info *HttpEgressFilterInfo) String() string {
 	return fmt.Sprintf("%s, %s,tracing=%v", info.Name(), info.clusterIP, info.EgressTracing)
 }
 
-func (info *HttpOutboundFilterInfo) CreateVirtualHost() route.VirtualHost {
+func (info *HttpEgressFilterInfo) CreateVirtualHost() route.VirtualHost {
 	routeAction := &route.RouteAction{
 		ClusterSpecifier: &route.RouteAction_Cluster{
 			Cluster: info.ClusterName(),
@@ -111,7 +108,7 @@ func (info *HttpOutboundFilterInfo) CreateVirtualHost() route.VirtualHost {
 
 }
 
-func (info *HttpOutboundFilterInfo) createHttpFilters() []*hcm.HttpFilter {
+func (info *HttpEgressFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 	httpFilters := []*hcm.HttpFilter{{
 		Name: common.RouterHttpFilter,
 	}}
@@ -155,7 +152,7 @@ func (info *HttpOutboundFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 	}
 	return httpFilters
 }
-func (info *HttpOutboundFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *HttpEgressFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
 	if info.clusterIP == "" || info.clusterIP == "None" {
 		return listener.FilterChain{}, nil
 	}

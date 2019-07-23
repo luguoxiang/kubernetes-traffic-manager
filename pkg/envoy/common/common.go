@@ -34,15 +34,6 @@ type stream interface {
 	Send(*v2.DiscoveryResponse) error
 	Recv() (*v2.DiscoveryRequest, error)
 }
-type EnvoyResource interface {
-	Name() string
-	Type() string
-	String() string
-}
-type EnvoyResourceClonable interface {
-	EnvoyResource
-	Clone() EnvoyResourceClonable
-}
 
 type ControlPlaneService struct {
 	resourceMap map[string]EnvoyResource
