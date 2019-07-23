@@ -6,7 +6,6 @@ import (
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/ingress"
 	"strings"
 	"time"
 )
@@ -17,20 +16,18 @@ const (
 )
 
 type AggregatedDiscoveryService struct {
-	cds  *ClustersControlPlaneService
-	eds  *EndpointsControlPlaneService
-	lds  *ListenersControlPlaneService
-	ilds *ingress.IngressListenersControlPlaneService
-	sds  *SecretsControlPlaneService
+	cds *ClustersControlPlaneService
+	eds *EndpointsControlPlaneService
+	lds *ListenersControlPlaneService
+	sds *SecretsControlPlaneService
 }
 
 func NewAggregatedDiscoveryService(cds *ClustersControlPlaneService,
 	eds *EndpointsControlPlaneService,
 	lds *ListenersControlPlaneService,
-	ilds *ingress.IngressListenersControlPlaneService,
 	sds *SecretsControlPlaneService) *AggregatedDiscoveryService {
 	return &AggregatedDiscoveryService{
-		cds: cds, eds: eds, lds: lds, ilds: ilds, sds: sds,
+		cds: cds, eds: eds, lds: lds, sds: sds,
 	}
 }
 func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
@@ -42,11 +39,7 @@ func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) 
 	case common.ListenerResource:
 		//always request all resources
 		req.ResourceNames = nil
-		if req.Node.Id == IngressNodeId {
-			return ads.ilds.ProcessRequest(req, ads.ilds.BuildResource)
-		} else {
-			return ads.lds.ProcessRequest(req, ads.lds.BuildResource)
-		}
+		return ads.lds.ProcessRequest(req, ads.lds.BuildResource)
 		//case RouteResource:
 	case common.SecretResource:
 		return ads.sds.ProcessRequest(req, ads.sds.BuildResource)
