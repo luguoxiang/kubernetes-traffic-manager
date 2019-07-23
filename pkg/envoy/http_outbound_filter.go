@@ -76,7 +76,7 @@ func NewHttpOutboundFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpOu
 }
 
 func (info *HttpOutboundFilterInfo) String() string {
-	return fmt.Sprintf("listener,http,outbound,%s, %s,tracing=%v", info.Name(), info.clusterIP, info.EgressTracing)
+	return fmt.Sprintf("%s, %s,tracing=%v", info.Name(), info.clusterIP, info.EgressTracing)
 }
 
 func (info *HttpOutboundFilterInfo) CreateVirtualHost() route.VirtualHost {

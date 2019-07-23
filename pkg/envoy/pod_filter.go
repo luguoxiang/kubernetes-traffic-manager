@@ -33,7 +33,7 @@ func NewPodFilterInfo(pod *kubernetes.PodInfo, port uint32, outboundPodIP bool) 
 }
 
 func (info *PodFilterInfo) String() string {
-	return fmt.Sprintf("listener,tcp,%s:%d", info.node, info.port)
+	return fmt.Sprintf("%s:%d", info.node, info.port)
 }
 
 func (info *PodFilterInfo) Type() string {

@@ -33,14 +33,6 @@ func (service *ServiceInfo) IsKubeAPIService() bool {
 	return service.Name() == "kubernetes" && service.Namespace() == "default"
 }
 
-func (service *ServiceInfo) OutboundEnabled() bool {
-	if service.IsKubeAPIService() {
-		return true
-	}
-
-	return strings.EqualFold(service.Labels[OUTBOUND_ENABLED], "true")
-}
-
 func (service *ServiceInfo) IsHttp(port uint32) bool {
 	key := ServicePortProtocol(port)
 	return strings.EqualFold(service.Labels[key], "http")
@@ -58,11 +50,24 @@ func (service *ServiceInfo) GetSelector() map[string]string {
 	return service.selector
 }
 
+func (service *ServiceInfo) OutboundEnabled() bool {
+	if service.IsKubeAPIService() {
+		return true
+	}
+	for _, port := range service.Ports {
+		key := ServicePortProtocol(port.Port)
+		if service.Labels[key] != "" {
+			return true
+		}
+	}
+	return false
+}
 func (service *ServiceInfo) String() string {
 	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("Service %s@%s OutboundEnabled=%v,Port=", service.name, service.namespace, service.OutboundEnabled()))
+	buffer.WriteString(fmt.Sprintf("Service %s@%s Port=", service.name, service.namespace))
 	for _, port := range service.Ports {
-		buffer.WriteString(fmt.Sprintf("%d", port.Port))
+		key := ServicePortProtocol(port.Port)
+		buffer.WriteString(fmt.Sprintf("%d:%s", port.Port, service.Annotations[key]))
 		buffer.WriteString(" ")
 	}
 

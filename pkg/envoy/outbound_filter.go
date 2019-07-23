@@ -29,7 +29,7 @@ func NewOutboundFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *OutboundFi
 }
 
 func (info *OutboundFilterInfo) String() string {
-	return fmt.Sprintf("listener,tcp,outbound,%s, clusterIp=%v", info.Name(), info.clusterIP)
+	return fmt.Sprintf("%s, clusterIp=%v", info.Name(), info.clusterIP)
 }
 
 func (info *OutboundFilterInfo) Type() string {

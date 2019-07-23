@@ -26,7 +26,6 @@ traffic-control is a control plane implementation of envoy proxy (https://www.en
 | Pod | traffic.endpoint.inbound.use_podip | Bool | if true, envoy will use pod ip instead of 127.0.0.1 to access attached pod |
 | Pod | traffic.envoy.enabled | Bool | whether enable envoy docker for pod |
 | Service | traffic.port.(port number)| http, tcp | protocol for the port on service, default is tcp |
-| Service | traffic.outbound.enabled | Bool | whether other pods can access this service by outbound request |
 | Deployment | traffic.endpoint.weight | Number in [0-128] | weight value for the pods of this deployment  |
 | Deployment | traffic.envoy.enabled | Bool | hether enable envoy docker for the pods of this deployment |
 

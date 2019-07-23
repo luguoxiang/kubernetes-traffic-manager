@@ -24,7 +24,7 @@ func NewByPassClusterInfo(svc *kubernetes.ServiceInfo, port uint32) *ByPassClust
 }
 
 func (info *ByPassClusterInfo) String() string {
-	return fmt.Sprintf("cluster,bypass,%s.%s:%d,mr=%d,ct=%v", info.Service, info.Namespace, info.Port, info.MaxRetries, info.ConnectionTimeout)
+	return fmt.Sprintf("%s.%s:%d,mr=%d,ct=%v", info.Service, info.Namespace, info.Port, info.MaxRetries, info.ConnectionTimeout)
 }
 
 func (info *ByPassClusterInfo) CreateCluster() *v2.Cluster {

@@ -39,7 +39,7 @@ func StaticClusterName(ip string, port uint32) string {
 }
 
 func (info *StaticClusterInfo) String() string {
-	return fmt.Sprintf("cluster,static,%s:%d,mc=%d,mpr=%d,mr=%d", info.IP, info.Port, info.MaxConnections, info.MaxPendingRequests, info.MaxRequests)
+	return fmt.Sprintf("%s:%d,mc=%d,mpr=%d,mr=%d", info.IP, info.Port, info.MaxConnections, info.MaxPendingRequests, info.MaxRequests)
 }
 
 func (info *StaticClusterInfo) Name() string {

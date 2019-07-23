@@ -44,7 +44,7 @@ func (cps *ClustersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo
 			cluster := NewByPassClusterInfo(svc, port.Port)
 			cluster.configCluster(svc)
 			cps.UpdateResource(cluster, svc.ResourceVersion)
-		} else {
+		} else if svc.Labels[kubernetes.ServicePortProtocol(port.Port)] != "" {
 			cluster := NewOutboundClusterInfo(svc, port.Port)
 			cluster.configCluster(svc)
 			cps.UpdateResource(cluster, svc.ResourceVersion)

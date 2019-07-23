@@ -29,7 +29,7 @@ func NewOutboundClusterInfo(svc *kubernetes.ServiceInfo, port uint32) *OutboundC
 }
 
 func (info *OutboundClusterInfo) String() string {
-	return fmt.Sprintf("cluster,outbound,%s.%s:%d,mr=%d,ct=%v", info.Service, info.Namespace, info.Port, info.MaxRetries, info.ConnectionTimeout)
+	return fmt.Sprintf("%s.%s:%d,mr=%d,ct=%v", info.Service, info.Namespace, info.Port, info.MaxRetries, info.ConnectionTimeout)
 }
 
 func (info *OutboundClusterInfo) Name() string {

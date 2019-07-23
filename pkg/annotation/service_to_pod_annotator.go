@@ -71,7 +71,7 @@ func (pa *ServiceToPodAnnotator) PodAdded(pod *kubernetes.PodInfo) {
 
 	for _, resource := range pa.k8sManager.GetMatchedResources(pod, kubernetes.SERVICE_TYPE) {
 		svc := resource.(*kubernetes.ServiceInfo)
-		if pod.EnvoyEnabled() || svc.OutboundEnabled() {
+		if pod.EnvoyEnabled() {
 			pa.addServiceAnnotationToPod(pod, svc)
 		}
 	}
@@ -91,7 +91,7 @@ func (manager *ServiceToPodAnnotator) ServiceValid(svc *kubernetes.ServiceInfo) 
 func (pa *ServiceToPodAnnotator) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	for _, resource := range pa.k8sManager.GetMatchedResources(svc, kubernetes.POD_TYPE) {
 		pod := resource.(*kubernetes.PodInfo)
-		if pod.EnvoyEnabled() || svc.OutboundEnabled() {
+		if pod.EnvoyEnabled() {
 			pa.addServiceAnnotationToPod(pod, svc)
 		}
 	}

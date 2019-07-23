@@ -14,7 +14,6 @@ const (
 	DEPLOYMENT_TYPE ResourceType = 2
 	POD_TYPE        ResourceType = 3
 
-	OUTBOUND_ENABLED            = "traffic.outbound.enabled"
 	ENVOY_ENABLED               = "traffic.envoy.enabled"
 	ENVOY_ENABLED_BY_DEPLOYMENT = "traffic.envoy.deployment.enabled"
 	ENVOY_PROXY_ANNOTATION      = "traffic.envoy.proxy"

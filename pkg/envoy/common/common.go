@@ -4,6 +4,8 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
+	"crypto/md5"
+	"encoding/hex"
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"reflect"
@@ -89,8 +91,19 @@ func (cps *ControlPlaneService) GetResources(resourceNames []string) (map[string
 			versions = append(versions, version)
 		}
 	}
-	sort.Strings(versions)
-	return requested, strings.Join(versions, ",")
+
+	switch len(versions) {
+	case 0:
+		return requested, ""
+	case 1:
+		return requested, versions[0]
+	default:
+		sort.Strings(versions)
+		hasher := md5.New()
+		hasher.Write([]byte(strings.Join(versions, ",")))
+		return requested, hex.EncodeToString(hasher.Sum(nil))
+	}
+
 }
 
 func (cps *ControlPlaneService) GetResourceNoCopy(name string) (EnvoyResource, string) {
@@ -137,7 +150,7 @@ func (cps *ControlPlaneService) UpdateResource(resource EnvoyResource, resourceV
 	if reflect.DeepEqual(cps.resourceMap[name], resource) {
 		return
 	}
-	glog.Infof("UpdateResource %s, version=%s", resource.String(), resourceVersion)
+	glog.Infof("ADD %T %s, version=%s", resource, resource.String(), resourceVersion)
 	cps.resourceMap[name] = resource
 
 	cps.versionMap[name] = resourceVersion

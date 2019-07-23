@@ -41,7 +41,7 @@ func (pod *PodInfo) Weight() uint32 {
 
 func (pod *PodInfo) EnvoyEnabled() bool {
 	if pod.Labels[ENVOY_ENABLED] != "" {
-		//ENVOY_ENABLED label will overide annotation set by deployment & service label
+		//ENVOY_ENABLED label will overide annotation set by deployment label
 		return strings.EqualFold(pod.Labels[ENVOY_ENABLED], "true")
 	}
 

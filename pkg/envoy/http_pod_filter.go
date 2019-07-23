@@ -52,7 +52,7 @@ func NewHttpPodFilterInfo(pod *kubernetes.PodInfo, port uint32, outboundPodIP bo
 }
 
 func (info *HttpPodFilterInfo) String() string {
-	return fmt.Sprintf("http,%s:%d, tracing=%v", info.podIP, info.port, info.IngressTracing)
+	return fmt.Sprintf("%s:%d, tracing=%v", info.podIP, info.port, info.IngressTracing)
 }
 
 func (info *HttpPodFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
