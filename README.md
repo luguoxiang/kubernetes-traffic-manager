@@ -19,6 +19,15 @@ When user label the service with "traffic.envoy.enabled=false"
 ## traffic-control
 traffic-control is a control plane implementation of envoy proxy (https://www.envoyproxy.io/). The data plane is group of "envoyproxy/envoy" images attached to k8s pods.
 
+# Quick start
+
+```
+helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
+kubectl label deployment productpage-v1 details-v1 ratings-v1 reviews-v1 reviews-v2 reviews-v3 traffic.envoy.enabled=true
+kubectl label svc productpage details ratings reviews traffic.port.9080=http
+```
+
 # Configuration
 ## Labels
 | Resource | Labels | Value | Description |
