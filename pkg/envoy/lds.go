@@ -56,6 +56,8 @@ func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInf
 			info = NewHttpClusterIpFilterInfo(svc, port.Port)
 		} else if protocol != "" {
 			info = NewClusterIpFilterInfo(svc, port.Port)
+		} else {
+			continue
 		}
 		cps.UpdateResource(info, svc.ResourceVersion)
 	}
@@ -66,8 +68,9 @@ func (cps *ListenersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceI
 		protocol := svc.Protocol(port.Port)
 		if protocol != "" {
 			info = NewClusterIpFilterInfo(svc, port.Port)
+			cps.UpdateResource(info, "")
 		}
-		cps.UpdateResource(info, "")
+
 	}
 }
 func (cps *ListenersControlPlaneService) ServiceUpdated(oldService, newService *kubernetes.ServiceInfo) {
