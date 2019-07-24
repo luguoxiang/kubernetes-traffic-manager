@@ -18,12 +18,37 @@ When user label the service with "traffic.envoy.enabled=false"
 traffic-control is a control plane implementation of envoy proxy (https://www.envoyproxy.io/). The data plane is group of "envoyproxy/envoy" images attached to k8s pods.
 
 # Quick start
-
+## Installation
 ```
 helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
+```
+
+### Deploy sample application and config
+```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl label deployment productpage-v1 details-v1 ratings-v1 reviews-v1 reviews-v2 reviews-v3 traffic.envoy.enabled=true
 kubectl label svc productpage details ratings reviews traffic.port.9080=http
+```
+
+## Check running envoy proxy instances on each node
+
+### Find envoy manager on target node
+```
+kubectl get pod -o wide
+NAME                              READY     STATUS    RESTARTS   AGE       IP             NODE
+traffic-envoy-manager-6f7nw       1/1       Running   0          9m        (node ip)  (targert node name)
+```
+### Run envoy tools inside envoy manager
+```
+shell> kubectl exec traffic-envoy-manager-6f7nw ./envoy-tools
+ID                                                                 |Pod                            |Namespace   |Status                  |State     |
+--                                                                 |---                            |---------   |------                  |-----     |
+86e56e0dc8e6a734fdb547aab60d9720117231742a32bdeaabc7dea6316a2f7b   |reviews-v3-5df889bcff-xdrwb    |default     |Up Less than a second   |running   |
+a55a9126aef6f402e71c6c9ee61c3c0674aef8b71aeb40334fc1154695d80410   |reviews-v2-7ff5966b99-krw9s    |default     |Up 1 second             |running   |
+
+shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id (prefix of the envoy id) -log
+...
+shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id a55a9 -exec "cat /var/log/access.log"
 ```
 
 # Configuration Labels
@@ -49,8 +74,6 @@ kubectl label svc productpage details ratings reviews traffic.port.9080=http
 | Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
 | Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
 | Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
-
-
 
 
 
