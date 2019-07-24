@@ -28,41 +28,29 @@ kubectl label deployment productpage-v1 details-v1 ratings-v1 reviews-v1 reviews
 kubectl label svc productpage details ratings reviews traffic.port.9080=http
 ```
 
-# Configuration
-e# Labels
-| Pod | traffic.endpoint.inbound.use_podip | Bool | if true, envoy will use pod ip instead of 127.0.0.1 to access attached pod |
-| Resource | Labels | Value | Description |
-|----------|--------|--------|------------|
-| Pod | traffic.envoy.enabled | Bool | whether enable envoy docker for pod |
-| Pod | traffic.tracing.ingress | Bool | enable tracing for requests to this pod |
-| Service | traffic.port.(port number)| http, tcp | protocol for the port on service, default is tcp |
-| Service | traffic.connection.timeout |timeout in miliseconds | |
-| Service | traffic.retries.max | max retries number | |
-| Service | traffic.connection.max | max number of connection | |
-| Service | traffic.request.max-pending | max pending requests | |
-| Service | traffic.tracing.egress | bool | enable tracing for requests to this service | 
-| Service | traffic.request.timeout | timeout in miliseconds | |
-| Service | traffic.retries.5xx | Number | number of retries for 5xx error | 
-| Service | traffic.retries.connect-failure | Number | |
-| Service | traffic.retries.gateway-error | Number | |
-| Service | traffic.fault.delay.time | delay time in miliseconds | |
-| Service | traffic.fault.delay.percentage | number | percentage of requests to be delayed for time |
-| Service | traffic.fault.abort.status | http status | abort with status |
-| Service | traffic.fault.abort.percentage | number | percentage of requests to be aborted |
-| Deployment | traffic.endpoint.weight | Number in [0-128] | weight value for the pods of this deployment  |
-| Deployment | traffic.envoy.enabled | Bool | hether enable envoy docker for the pods of this deployment |
+# Configuration Labels
 
-## Annotations
-The annotations are set by control plane, user does not need to set these annotations
-
-| Resource | Annotations | Value | Description |
-|----------|-------------|-------|-------------|
-| Pod | traffic.svc.(service name).port.(port number) | http, tcp | the pod belonging to a service which define port with protocol |
-| Pod | traffic.svc.(service name).headless | Bool | whether the pod belonging to certain headless service |
-| Pod | traffic.envoy.deployment.enabled | Bool | whetehr the pod's envoy is enabled by a deployment |
-| Pod | traffic.endpoint.weight | Number in [0-128] | whetehr the pod has a weight set by a deployment |
-| Pod | traffic.envoy.proxy | envoy docker id | envoy docker id if this pod's envoy is enabled |
-
+| Resource | Labels | Default | Description |
+|----------|--------|---------|--------------|
+| Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
+| Pod | traffic.tracing.ingress | true | enable ingress tracing for requests to this pod |
+| Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
+| Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp)|
+| Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
+| Service | traffic.retries.max | 0 | max retries number |
+| Service | traffic.connection.max | 0 | max number of connection | 
+| Service | traffic.request.max-pending | 0 | max pending requests  |
+| Service | traffic.tracing.egress | true | enable tracing for requests to this service | 
+| Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
+| Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
+| Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
+| Service | traffic.retries.gateway-error | 0 | number of retries for gateway error |
+| Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
+| Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
+| Service | traffic.fault.abort.status | 0 | abort with http status |
+| Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
+| Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
+| Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
 
 
 
