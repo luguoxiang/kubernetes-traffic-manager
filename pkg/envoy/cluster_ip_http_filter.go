@@ -18,8 +18,8 @@ import (
 	"time"
 )
 
-type HttpEgressFilterInfo struct {
-	EgressFilterInfo
+type HttpClusterIpFilterInfo struct {
+	ClusterIpFilterInfo
 
 	EgressTracing  bool
 	RequestTimeout time.Duration
@@ -33,11 +33,11 @@ type HttpEgressFilterInfo struct {
 	FaultInjectionAbortStatus     uint32
 }
 
-func NewHttpEgressFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpEgressFilterInfo {
-	egressListenerInfo := NewEgressFilterInfo(svc, port)
-	info := &HttpEgressFilterInfo{
-		EgressFilterInfo: *egressListenerInfo,
-		EgressTracing:    true,
+func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpClusterIpFilterInfo {
+	egressListenerInfo := NewClusterIpFilterInfo(svc, port)
+	info := &HttpClusterIpFilterInfo{
+		ClusterIpFilterInfo: *egressListenerInfo,
+		EgressTracing:       true,
 	}
 
 	info.FaultInjectionAbortStatus = 503
@@ -72,11 +72,11 @@ func NewHttpEgressFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpEgre
 	return info
 }
 
-func (info *HttpEgressFilterInfo) String() string {
+func (info *HttpClusterIpFilterInfo) String() string {
 	return fmt.Sprintf("%s, %s,tracing=%v", info.Name(), info.clusterIP, info.EgressTracing)
 }
 
-func (info *HttpEgressFilterInfo) CreateVirtualHost() route.VirtualHost {
+func (info *HttpClusterIpFilterInfo) CreateVirtualHost() route.VirtualHost {
 	routeAction := &route.RouteAction{
 		ClusterSpecifier: &route.RouteAction_Cluster{
 			Cluster: info.ClusterName(),
@@ -108,7 +108,7 @@ func (info *HttpEgressFilterInfo) CreateVirtualHost() route.VirtualHost {
 
 }
 
-func (info *HttpEgressFilterInfo) createHttpFilters() []*hcm.HttpFilter {
+func (info *HttpClusterIpFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 	httpFilters := []*hcm.HttpFilter{{
 		Name: common.RouterHttpFilter,
 	}}
@@ -152,7 +152,7 @@ func (info *HttpEgressFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 	}
 	return httpFilters
 }
-func (info *HttpEgressFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
 	if info.clusterIP == "" || info.clusterIP == "None" {
 		return listener.FilterChain{}, nil
 	}

@@ -14,24 +14,23 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
-type HttpPodIngressFilterInfo struct {
-	PodIngressFilterInfo
+//listener filter for local pod or outbound listener filter for headless service pod
+type HttpPodIpFilterInfo struct {
+	PodIpFilterInfo
 	IngressTracing bool
 	Domains        map[string][]string
 }
 
-func NewHttpPodIngressFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool) ListenerInfo {
-	inBoundInfo := NewPodIngressFilterInfo(pod, port, headless)
-	result := &HttpPodIngressFilterInfo{
-		PodIngressFilterInfo: *inBoundInfo,
-		IngressTracing:       true,
+func NewHttpPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool) ListenerInfo {
+	podFilter := NewPodIpFilterInfo(pod, port, headless)
+	result := &HttpPodIpFilterInfo{
+		PodIpFilterInfo: *podFilter,
+		IngressTracing:  true,
 	}
-	if !headless {
-		for k, v := range pod.Labels {
-			switch k {
-			case "traffic.envoy.tracing.ingress":
-				result.IngressTracing = kubernetes.GetLabelValueBool(v)
-			}
+	for k, v := range pod.Labels {
+		switch k {
+		case "traffic.envoy.tracing.ingress":
+			result.IngressTracing = kubernetes.GetLabelValueBool(v)
 		}
 	}
 	for key, _ := range pod.Annotations {
@@ -53,18 +52,15 @@ func NewHttpPodIngressFilterInfo(pod *kubernetes.PodInfo, port uint32, headless 
 	return result
 }
 
-func (info *HttpPodIngressFilterInfo) String() string {
+func (info *HttpPodIpFilterInfo) String() string {
 	return fmt.Sprintf("%s:%d, tracing=%v", info.podIP, info.port, info.IngressTracing)
 }
 
-func (info *HttpPodIngressFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
-	defaultClusterName := info.getClusterName(node.Id)
-	if defaultClusterName == "" {
-		return listener.FilterChain{}, nil
-	}
-
+func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string, podCluserName string) []route.VirtualHost {
 	var virtualHosts []route.VirtualHost
-	if node.Id != info.node {
+	if nodeId != info.node {
+		//for headless service, should use http Host header to match the target service name so that we can use
+		//cluster ip to route the request.
 		for cluster, domains := range info.Domains {
 			virtualHosts = append(virtualHosts, route.VirtualHost{
 				Name:    fmt.Sprintf("%s_vh", cluster),
@@ -87,7 +83,7 @@ func (info *HttpPodIngressFilterInfo) CreateFilterChain(node *core.Node) (listen
 		}
 	}
 	virtualHosts = append(virtualHosts, route.VirtualHost{
-		Name:    fmt.Sprintf("%s_vh", defaultClusterName),
+		Name:    fmt.Sprintf("%s_vh", podCluserName),
 		Domains: []string{"*"},
 		Routes: []route.Route{{
 			Match: route.RouteMatch{
@@ -98,12 +94,20 @@ func (info *HttpPodIngressFilterInfo) CreateFilterChain(node *core.Node) (listen
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_Cluster{
-						Cluster: defaultClusterName,
+						Cluster: podCluserName,
 					},
 				},
 			},
 		}},
 	})
+	return virtualHosts
+}
+
+func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+	podCluserName := info.getClusterName(node.Id)
+	if podCluserName == "" {
+		return listener.FilterChain{}, nil
+	}
 
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.AUTO,
@@ -119,14 +123,15 @@ func (info *HttpPodIngressFilterInfo) CreateFilterChain(node *core.Node) (listen
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &v2.RouteConfiguration{
 				Name:         info.Name(),
-				VirtualHosts: virtualHosts,
+				VirtualHosts: info.CreateVirtualHosts(node.Id, podCluserName),
 			},
 		},
 		HttpFilters: []*hcm.HttpFilter{{
 			Name: common.RouterHttpFilter,
 		}},
 	}
-	if info.IngressTracing {
+	//headless outbound acess will be traced at target headless service pod
+	if info.IngressTracing && node.Id == info.node {
 		manager.Tracing = &hcm.HttpConnectionManager_Tracing{
 			OperationName: hcm.INGRESS,
 		}

@@ -79,17 +79,12 @@ func (cps *ClustersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
 		cluster := NewStaticLocalClusterInfo(port)
 		cps.UpdateResource(cluster, "1")
 
-		if pod.HasHeadlessService() {
-			cluster = NewStaticClusterInfo(pod.PodIP, port)
-			cluster.ConfigCluster(pod.Annotations)
-			cps.UpdateResource(cluster, pod.ResourceVersion)
-		}
+		cluster = NewStaticClusterInfo(pod.PodIP, port)
+		cluster.ConfigCluster(pod.Annotations)
+		cps.UpdateResource(cluster, pod.ResourceVersion)
 	}
 }
 func (cps *ClustersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
-	if !pod.HasHeadlessService() {
-		return
-	}
 	for port, _ := range pod.GetPortMap() {
 		cluster := NewStaticClusterInfo(pod.PodIP, port)
 		cps.UpdateResource(cluster, "")

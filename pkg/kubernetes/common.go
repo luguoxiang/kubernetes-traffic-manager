@@ -17,6 +17,7 @@ const (
 	ENVOY_ENABLED               = "traffic.envoy.enabled"
 	ENVOY_ENABLED_BY_DEPLOYMENT = "traffic.envoy.deployment.enabled"
 	ENVOY_PROXY_ANNOTATION      = "traffic.envoy.proxy"
+	LOCAL_ACCESS_POD_IP         = "traffic.envoy.local.use_podip"
 	ENDPOINT_WEIGHT             = "traffic.endpoint.weight"
 	DEFAULT_WEIGHT              = 100
 
