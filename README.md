@@ -26,8 +26,11 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 ### Deploy sample application and config
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
-kubectl label deployment productpage-v1 details-v1 ratings-v1 reviews-v1 reviews-v2 reviews-v3 traffic.envoy.enabled=true
 kubectl label svc productpage details ratings reviews traffic.port.9080=http
+kubectl label deployment productpage-v1 details-v1 ratings-v1 reviews-v1 reviews-v2 reviews-v3 traffic.envoy.enabled=true
+
+# query example productpage service 
+kubectl run demo-client --image tutum/curl curl productpage:9080/productpage --restart=OnFailure
 ```
 
 ## Check running envoy proxy instances on each node
@@ -48,7 +51,7 @@ a55a9126aef6f402e71c6c9ee61c3c0674aef8b71aeb40334fc1154695d80410   |reviews-v2-7
 
 shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id (prefix of the envoy id) -log
 ...
-shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id a55a9 -exec "cat /var/log/access.log"
+shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id a55a9 -exec "tail /var/log/access.log"
 ```
 
 ## Check envoy configuration
@@ -56,6 +59,13 @@ shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id a55a9 -exec
 kubectl exec traffic-control-89778f5d8-nmvrn -- ./envoy-config --nodeId reviews-v3-5df889bcff-f2hgh.default
 ```
 node id is pod name and pod namespace
+
+## Check runtime metrics
+```
+kubectl port-forward traffic-prometheus-cb5878bd8-fxpcd 9090 &
+curl localhost:9090/api/v1/label/__name__/values |jq
+curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_completed |jq
+```
 
 # Configuration Labels
 

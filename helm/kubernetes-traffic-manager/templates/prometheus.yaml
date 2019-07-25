@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: traffic-prometheus
+  labels:
+    app: traffic-prometheus
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: {{ .Release.Name }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: traffic-prometheus
+    spec:
+      containers:
+      - name: traffic-prometheus
+        image: prom/prometheus:v2.0.0
+        args:
+        - "--config.file=/etc/prometheus/conf/prometheus.yml"
+        ports:
+        - containerPort: {{ .Values.port.prometheusPort }}
+          name: prometheus
+        volumeMounts:
+        - name: prometheus-config-volume
+          mountPath: /etc/prometheus/conf/ 
+      volumes:
+      - name: prometheus-config-volume
+        configMap:
+          name: prometheus-configmap

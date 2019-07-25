@@ -8,6 +8,8 @@ port:
   envoyAdmin: 8900
   envoyProxy: 10000
   trafficZipkin: 9411
+  prometheusPort: 9090
+  
 
 proxy:
   uid: 1337

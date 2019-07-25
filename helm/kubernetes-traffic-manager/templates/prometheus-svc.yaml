@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-prometheus
+  labels:
+    app: traffic-prometheus
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-prometheus
+  ports:
+  - name: prometheus
+    port: {{ .Values.port.prometheusPort }}
+    targetPort: {{ .Values.port.prometheusPort }}
