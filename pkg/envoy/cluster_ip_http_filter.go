@@ -58,7 +58,7 @@ func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpC
 			info.RetryOn = "gateway-error"
 			info.RetryTimes = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.fault.delay.time":
-			info.FaultInjectionFixDelay = time.Duration(kubernetes.GetLabelValueUInt32(v)) * time.Microsecond
+			info.FaultInjectionFixDelay = time.Duration(kubernetes.GetLabelValueUInt32(v)) * time.Millisecond
 		case "traffic.fault.delay.percentage":
 			info.FaultInjectionFixDelayPercentage = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.fault.abort.status":

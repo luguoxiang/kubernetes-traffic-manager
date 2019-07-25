@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	httpfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/proto"
@@ -21,6 +22,8 @@ func decodeAny(any *types.Any) interface{} {
 		pb = &tcp.TcpProxy{}
 	case "type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog":
 		pb = &accesslog.FileAccessLog{}
+	case "type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault":
+		pb = &httpfault.HTTPFault{}
 	default:
 		panic(any.TypeUrl)
 	}

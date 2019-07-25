@@ -18,8 +18,8 @@ data:
         ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_annotation_traffic_envoy_deployment_enabled, __meta_kubernetes_pod_label_traffic_envoy_enabled]
-        regex: "(true;)|(true;true)"
+      - source_labels: [__meta_kubernetes_pod_annotation_traffic_envoy_proxy]
+        regex: "[0-9a-z]+"
         replacement: $1
         action: keep
       - source_labels: [__meta_kubernetes_pod_ip]
