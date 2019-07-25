@@ -140,10 +140,7 @@ func (client *DockerClient) CreateDockerInstance(podInfo *kubernetes.PodInfo) (s
 		glog.Infof("target network container %s for pod %s", pauseDocker, podInfo.Name())
 	}
 	network := container.NetworkMode(fmt.Sprintf("container:%s", pauseDocker))
-	var portList string
-	for port, _ := range podInfo.GetPortMap() {
-		portList += fmt.Sprintf("%d ", port)
-	}
+
 	env := []string{
 		fmt.Sprintf("MY_POD_IP=%s", podInfo.PodIP),
 		fmt.Sprintf("CONTROL_PLANE_PORT=%s", client.ControlPlanePort),
@@ -157,8 +154,6 @@ func (client *DockerClient) CreateDockerInstance(podInfo *kubernetes.PodInfo) (s
 		////used for envoy's --service-cluster option
 		fmt.Sprintf("SERVICE_CLUSTER=%s.%s", podInfo.Name(), podInfo.Namespace()),
 		fmt.Sprintf("NODE_ID=%s.%s", podInfo.Name(), podInfo.Namespace()),
-
-		fmt.Sprintf("INBOUND_PORTS_INCLUDE=%s", portList),
 	}
 
 	proxy_config := &container.Config{
