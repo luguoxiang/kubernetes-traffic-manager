@@ -1,22 +1,10 @@
-# Components
-## envoy-manager
-Responsible to start/stop envoy container for traffic-control
-
-When user label a service with "traffic.envoy.enabled=true", envoy-manager will start a envoy docker instance:
-* Envoy docker git repo: https://github.com/luguoxiang/traffic-envoy
-* The docker instance will share corresponding pod's network(docker container network mode).
-* The iptable config of the pod network will be changed to redirect all incoming and outcoming traffic to envoy container listen port. (reference envoy-proxy/iptable_init.sh, the port number is set to PROXY_PORT env, default 10000).
-* The pod will be annotated with traffic.envoy.enabled=true, traffic.envoy.proxy=(docker id)
-
-When user label the service with "traffic.envoy.enabled=false"
-
-* the docker instance will be deleted
-* the iptable config will be restored (reference envoy-proxy/iptable_clean.sh)
-* the pod will be annotated with traffic.envoy.enabled=false, traffic.envoy.proxy=""
-
-## traffic-control
-traffic-control is a control plane implementation of envoy proxy (https://www.envoyproxy.io/). The data plane is group of "envoyproxy/envoy" images attached to k8s pods.
-
+# Introduction
+ kubernetes-traffic-manager is a traffic manage tools for kubernetes, it implements envoy (https://www.envoyproxy.io/) control plane data api to support:
+ * Weighted load balancing
+ * Tracing
+ * Circuit breaker
+ * Runtime metrics
+ 
 # Quick start
 ## Installation
 ```
@@ -26,7 +14,12 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 ### Deploy sample application and config
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
+
+# By default all envoy enabled pod's incoming and outcoming traffic will be blocked or invalided.
+# You need to add following labels to unblock traffic on certain port, the protocol can be http or tcp. 
 kubectl label svc productpage details ratings reviews traffic.port.9080=http
+
+# enable envoy proxy on pods belongs to these deployments
 kubectl label deployment productpage-v1 details-v1 ratings-v1 reviews-v1 reviews-v2 reviews-v3 traffic.envoy.enabled=true
 
 # query example productpage service 
@@ -90,5 +83,22 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
 | Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
 
+# Components
+## envoy-manager
+Responsible to start/stop envoy container for traffic-control
 
+When user label a deployment with "traffic.envoy.enabled=true", envoy-manager will start a envoy docker instance:
+* Envoy docker git repo: https://github.com/luguoxiang/traffic-envoy
+* The docker instance will share corresponding pod's network(docker container network mode).
+* The iptable config of the pod network will be changed to redirect all incoming and outcoming traffic to envoy container listen port.
+* The pod will be annotated with traffic.envoy.enabled=true, traffic.envoy.proxy=(docker id)
+
+When user label the service with "traffic.envoy.enabled=false"
+
+* the docker instance will be deleted
+* the iptable config will be restored
+* the pod will be annotated with traffic.envoy.enabled=false, traffic.envoy.proxy=""
+
+## traffic-control
+traffic-control is a control plane implementation of envoy proxy (https://www.envoyproxy.io/). The data plane is group of "envoyproxy/envoy" images attached to kubernetes pods.
 
