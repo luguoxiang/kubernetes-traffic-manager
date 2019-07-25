@@ -47,18 +47,17 @@ func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.Po
 func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
 	annotations := map[string]*string{}
 	key := kubernetes.PodTracingByService(svc.Name())
-	value := svc.Labels[kubernetes.TRACING_ENABLED]
-	if value != "" {
-		annotations[key] = &value
+	traceEnabled := svc.Labels[kubernetes.TRACING_ENABLED]
+	if traceEnabled != "" {
+		annotations[key] = &traceEnabled
 	}
 
 	for _, port := range svc.Ports {
-		var value string
 		svc_key := kubernetes.ServicePortProtocol(port.Port)
-		if svc.Labels[svc_key] != "" {
-			value = svc.Labels[svc_key]
+		protocol := svc.Labels[svc_key]
+		if protocol != "" {
 			key = kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
-			annotations[key] = &value
+			annotations[key] = &protocol
 		}
 
 	}
@@ -69,8 +68,8 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 
 		for _, key := range HeadlessServiceAnnotations {
 			if svc.Labels[key] != "" {
-				value := svc.Labels[key]
-				annotations[key] = &value
+				headlessValue := svc.Labels[key]
+				annotations[key] = &headlessValue
 			}
 		}
 	}

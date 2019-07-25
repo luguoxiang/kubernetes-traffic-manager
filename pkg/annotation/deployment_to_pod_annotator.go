@@ -34,14 +34,14 @@ func (annotator *DeploymentToPodAnnotator) addDeploymentAnnotateToPod(pod *kuber
 	annotations := map[string]*string{}
 
 	//propagate deployment labels to pod
-	value := deployment.Labels[kubernetes.ENDPOINT_WEIGHT]
-	if value != "" {
-		annotations[kubernetes.ENDPOINT_WEIGHT] = &value
+	value1 := deployment.Labels[kubernetes.ENDPOINT_WEIGHT]
+	if value1 != "" {
+		annotations[kubernetes.ENDPOINT_WEIGHT] = &value1
 	}
 
-	value = deployment.Labels[kubernetes.ENVOY_ENABLED]
-	if value != "" {
-		annotations[kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT] = &value
+	value2 := deployment.Labels[kubernetes.ENVOY_ENABLED]
+	if value2 != "" {
+		annotations[kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT] = &value2
 	}
 
 	if len(annotations) == 0 {
