@@ -38,7 +38,7 @@ kubectl get pod -o wide
 NAME                              READY     STATUS    RESTARTS   AGE       IP             NODE
 traffic-envoy-manager-6f7nw       1/1       Running   0          9m        (node ip)  (targert node name)
 ```
-### Run envoy tools inside envoy manager
+### Check running envoy proxy instances
 ```
 shell> kubectl exec traffic-envoy-manager-6f7nw ./envoy-tools
 ID                                                                 |Pod                            |Namespace   |Status                  |State     |
@@ -51,19 +51,24 @@ shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id (prefix of 
 shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id a55a9 -exec "cat /var/log/access.log"
 ```
 
+## Check envoy configuration
+```
+kubectl exec traffic-control-89778f5d8-nmvrn -- ./envoy-config --nodeId reviews-v3-5df889bcff-f2hgh.default
+```
+node id is pod name and pod namespace
+
 # Configuration Labels
 
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
 | Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
-| Pod | traffic.tracing.ingress | true | enable ingress tracing for requests to this pod |
 | Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
 | Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp)|
 | Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
 | Service | traffic.retries.max | 0 | max retries number |
 | Service | traffic.connection.max | 0 | max number of connection | 
 | Service | traffic.request.max-pending | 0 | max pending requests  |
-| Service | traffic.tracing.egress | true | enable tracing for requests to this service | 
+| Service | traffic.tracing.enabled | false | enable tracing for requests to or from pods of this service | 
 | Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
 | Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
 | Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |

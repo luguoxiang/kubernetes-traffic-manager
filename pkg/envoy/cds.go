@@ -1,6 +1,7 @@
 package envoy
 
 import (
+	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
@@ -11,7 +12,7 @@ import (
 
 type ClusterInfo interface {
 	common.EnvoyResource
-	CreateCluster() *v2.Cluster
+	CreateCluster(nodeId string) *v2.Cluster
 }
 
 type ClustersControlPlaneService struct {
@@ -27,7 +28,10 @@ func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]com
 
 	for _, resource := range resourceMap {
 		clusterInfo := resource.(ClusterInfo)
-		serviceCluster := clusterInfo.CreateCluster()
+		serviceCluster := clusterInfo.CreateCluster(node.Id)
+		if serviceCluster.ConnectTimeout == 0 {
+			panic(fmt.Sprintf("cluster %s connect timeout should not be zero", serviceCluster.Name))
+		}
 		clusters = append(clusters, serviceCluster)
 	}
 
@@ -79,14 +83,14 @@ func (cps *ClustersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
 		cluster := NewStaticLocalClusterInfo(port)
 		cps.UpdateResource(cluster, "1")
 
-		cluster = NewStaticClusterInfo(pod.PodIP, port)
+		cluster = NewStaticClusterInfo(pod.PodIP, port, pod.NodeId())
 		cluster.ConfigCluster(pod.Annotations)
 		cps.UpdateResource(cluster, pod.ResourceVersion)
 	}
 }
 func (cps *ClustersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
 	for port, _ := range pod.GetPortMap() {
-		cluster := NewStaticClusterInfo(pod.PodIP, port)
+		cluster := NewStaticClusterInfo(pod.PodIP, port, pod.NodeId())
 		cps.UpdateResource(cluster, "")
 	}
 }

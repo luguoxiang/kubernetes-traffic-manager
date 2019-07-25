@@ -35,8 +35,6 @@ func (info *ClusterConfigInfo) ConfigCluster(labels map[string]string) {
 }
 
 func (info *ClusterConfigInfo) ApplyClusterConfig(clusterInfo *v2.Cluster) {
-	clusterInfo.ConnectTimeout = info.ConnectionTimeout
-
 	var threshold cluster.CircuitBreakers_Thresholds
 	var hasCircuitBreaker bool
 	if info.MaxConnections > 0 {

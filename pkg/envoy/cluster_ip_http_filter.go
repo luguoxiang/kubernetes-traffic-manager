@@ -21,7 +21,7 @@ import (
 type HttpClusterIpFilterInfo struct {
 	ClusterIpFilterInfo
 
-	EgressTracing  bool
+	Tracing        bool
 	RequestTimeout time.Duration
 	RetryOn        string
 	RetryTimes     uint32
@@ -37,7 +37,6 @@ func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpC
 	egressListenerInfo := NewClusterIpFilterInfo(svc, port)
 	info := &HttpClusterIpFilterInfo{
 		ClusterIpFilterInfo: *egressListenerInfo,
-		EgressTracing:       true,
 	}
 
 	info.FaultInjectionAbortStatus = 503
@@ -45,8 +44,8 @@ func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpC
 
 	for k, v := range svc.Labels {
 		switch k {
-		case "traffic.tracing.egress":
-			info.EgressTracing = kubernetes.GetLabelValueBool(v)
+		case kubernetes.TRACING_ENABLED:
+			info.Tracing = kubernetes.GetLabelValueBool(v)
 		case "traffic.request.timeout":
 			info.RequestTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
 		case "traffic.retries.5xx":
@@ -73,7 +72,7 @@ func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpC
 }
 
 func (info *HttpClusterIpFilterInfo) String() string {
-	return fmt.Sprintf("%s, %s,tracing=%v", info.Name(), info.clusterIP, info.EgressTracing)
+	return fmt.Sprintf("%s, %s,tracing=%v", info.Name(), info.clusterIP, info.Tracing)
 }
 
 func (info *HttpClusterIpFilterInfo) CreateVirtualHost() route.VirtualHost {
@@ -170,7 +169,7 @@ func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listene
 		HttpFilters: info.createHttpFilters(),
 	}
 
-	if info.EgressTracing {
+	if info.Tracing {
 		manager.Tracing = &hcm.HttpConnectionManager_Tracing{
 			OperationName: hcm.EGRESS,
 		}

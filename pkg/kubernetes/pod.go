@@ -25,6 +25,10 @@ func (pod *PodInfo) EnvoyDockerId() string {
 	return pod.Annotations[ENVOY_PROXY_ANNOTATION]
 }
 
+func (pod *PodInfo) NodeId() string {
+	return fmt.Sprintf("%s.%s", pod.Name(), pod.Namespace())
+}
+
 func (pod *PodInfo) Weight() uint32 {
 	value := pod.Annotations[ENDPOINT_WEIGHT]
 	if value != "" {
@@ -42,15 +46,14 @@ func (pod *PodInfo) Weight() uint32 {
 func (pod *PodInfo) EnvoyEnabled() bool {
 	if pod.Labels[ENVOY_ENABLED] != "" {
 		//ENVOY_ENABLED label will overide annotation set by deployment label
-		return strings.EqualFold(pod.Labels[ENVOY_ENABLED], "true")
+		return GetLabelValueBool(pod.Labels[ENVOY_ENABLED])
 	}
-
-	return strings.EqualFold(pod.Annotations[ENVOY_ENABLED_BY_DEPLOYMENT], "true")
+	return GetLabelValueBool(pod.Annotations[ENVOY_ENABLED_BY_DEPLOYMENT])
 }
 
 func (pod *PodInfo) HasHeadlessService() bool {
 	for k, v := range pod.Annotations {
-		if strings.HasPrefix(k, POD_SERVICE_PREFIX) && strings.HasSuffix(k, ".headless") && strings.EqualFold(v, "true") {
+		if strings.HasPrefix(k, POD_SERVICE_PREFIX) && strings.HasSuffix(k, ".headless") && GetLabelValueBool(v) {
 			return true
 		}
 	}
@@ -61,6 +64,7 @@ type PodPortInfo struct {
 	Port     uint32
 	Protocol string
 	Headless bool
+	Tracing  bool
 }
 
 func GetServiceAndPort(annotation string) (string, uint32) {
@@ -77,11 +81,6 @@ func GetServiceAndPort(annotation string) (string, uint32) {
 	return "", 0
 }
 
-func (pod *PodInfo) IsHeadlessService(service string) bool {
-	headlessKey := PodHeadlessByService(service)
-	return strings.EqualFold(pod.Annotations[headlessKey], "true")
-}
-
 func (pod *PodInfo) GetPortMap() map[uint32]PodPortInfo {
 	result := make(map[uint32]PodPortInfo)
 	for key, v := range pod.Annotations {
@@ -91,8 +90,12 @@ func (pod *PodInfo) GetPortMap() map[uint32]PodPortInfo {
 			oldInfo.Port = port
 			// do not override http protocol and headless
 			if !oldInfo.Headless {
-				headlessKey := PodHeadlessByService(service)
-				oldInfo.Headless = strings.EqualFold(pod.Annotations[headlessKey], "true")
+				key = PodHeadlessByService(service)
+				oldInfo.Headless = GetLabelValueBool(pod.Annotations[key])
+			}
+			if !oldInfo.Tracing {
+				key = PodTracingByService(service)
+				oldInfo.Tracing = GetLabelValueBool(pod.Annotations[key])
 			}
 			if v != "" && (oldInfo.Protocol == "" || oldInfo.Protocol == "tcp") {
 				oldInfo.Protocol = v

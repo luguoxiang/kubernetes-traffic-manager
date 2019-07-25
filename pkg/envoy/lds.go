@@ -91,7 +91,7 @@ func (cps *ListenersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
 	var info common.EnvoyResource
 	for port, portInfo := range pod.GetPortMap() {
 		if portInfo.Protocol == "http" {
-			info = NewHttpPodIpFilterInfo(pod, port, portInfo.Headless)
+			info = NewHttpPodIpFilterInfo(pod, port, portInfo.Headless, portInfo.Tracing)
 		} else {
 			info = NewPodIpFilterInfo(pod, port, portInfo.Headless)
 		}
@@ -113,7 +113,7 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	var info common.EnvoyResource
 	for port, portInfo := range newPod.GetPortMap() {
 		if portInfo.Protocol == "http" {
-			info = NewHttpPodIpFilterInfo(newPod, port, portInfo.Headless)
+			info = NewHttpPodIpFilterInfo(newPod, port, portInfo.Headless, portInfo.Tracing)
 		} else {
 			info = NewPodIpFilterInfo(newPod, port, portInfo.Headless)
 		}

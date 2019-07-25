@@ -1,4 +1,2 @@
 vendor
-envoy-manager
-envoy-tools
-traffic-control-plane
+bin

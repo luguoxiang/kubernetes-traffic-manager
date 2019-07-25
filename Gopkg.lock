@@ -77,7 +77,7 @@
   version = "v0.4.0"
 
 [[projects]]
-  digest = "1:a2d7fd2421a8578c4adea9830bef9d17366e4640edb57735dff2d1dc68815a9e"
+  digest = "1:0c5a1d66b07777ac559677e44792ffa2a7ead3cab7f0d0256dfa27dd87e7bba2"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -97,8 +97,16 @@
     "envoy/type",
   ]
   pruneopts = ""
-  revision = "0ad6fa1cf0b9b6ca8f3617a7188a568e81f40b87"
-  version = "v0.6.9"
+  revision = "0f0598e8dab0c0306119ca6fff632b0a672cbfa1"
+  version = "v0.8.2"
+
+[[projects]]
+  digest = "1:6d8b4fb4c51db60a75537eeec6fb579b26e53832988d58224d4ebe6a2bb2bfe1"
+  name = "github.com/envoyproxy/protoc-gen-validate"
+  packages = ["validate"]
+  pruneopts = ""
+  revision = "9eff07ddfcb4001aa1aab280648153f46e1a8ddc"
+  version = "v0.1.0"
 
 [[projects]]
   digest = "1:b13707423743d41665fd23f0c36b2f37bb49c30e94adb813319c44188a51ba22"
@@ -210,14 +218,6 @@
   pruneopts = ""
   revision = "0ff49de124c6f76f8494e194af75bde0f1a49a29"
   version = "v1.1.6"
-
-[[projects]]
-  digest = "1:a404c6713d3e7fb61746c8bc355c6009ddb8fbb2e376ce33c03881645217f1a1"
-  name = "github.com/lyft/protoc-gen-validate"
-  packages = ["validate"]
-  pruneopts = ""
-  revision = "ff6f7a9bc2e5fe006509b9f8c7594c41a953d50f"
-  version = "v0.0.14"
 
 [[projects]]
   digest = "1:0c0ff2a89c1bb0d01887e1dac043ad7efbf3ec77482ef058ac423d13497e16fd"

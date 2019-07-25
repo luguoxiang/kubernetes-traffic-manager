@@ -27,7 +27,7 @@ func (info *ByPassClusterInfo) String() string {
 	return fmt.Sprintf("%s.%s:%d,mr=%d,ct=%v", info.Service, info.Namespace, info.Port, info.MaxRetries, info.ConnectionTimeout)
 }
 
-func (info *ByPassClusterInfo) CreateCluster() *v2.Cluster {
+func (info *ByPassClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 	result := &v2.Cluster{
 		Name:           info.Name(),
 		ConnectTimeout: info.ConnectionTimeout,

@@ -74,13 +74,17 @@ func (ads *AggregatedDiscoveryService) StreamAggregatedResources(stream discover
 			break
 		}
 		go func(req *v2.DiscoveryRequest) {
-			glog.Infof("Request recevied: type=%s, nonce=%s, version=%s, resource=%s, node=%s",
-				req.TypeUrl, req.GetResponseNonce(), req.VersionInfo, strings.Join(req.ResourceNames, ","), req.Node.Id)
+			if glog.V(2) {
+				glog.Infof("Request recevied: type=%s, nonce=%s, version=%s, resource=%s, node=%s",
+					req.TypeUrl, req.GetResponseNonce(), req.VersionInfo, strings.Join(req.ResourceNames, ","), req.Node.Id)
+			}
 			resp, err := ads.processRequest(req)
 			if err != nil {
 				glog.Errorf("Failed to process %s, version=%s:%s", req.TypeUrl, resp.VersionInfo, err.Error())
 			} else {
-				glog.Infof("Send %s, version=%s", req.TypeUrl, resp.VersionInfo)
+				if glog.V(2) {
+					glog.Infof("Send %s, version=%s", req.TypeUrl, resp.VersionInfo)
+				}
 				stream.Send(resp)
 			}
 

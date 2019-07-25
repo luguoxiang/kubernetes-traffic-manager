@@ -7,6 +7,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"os"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/client"
@@ -26,7 +27,7 @@ func main() {
 	var typeUrl string
 	var nodeId string
 	var resource string
-	flag.StringVar(&serverAddr, "serverAddr", "localhost:18000", "grpc server address")
+	flag.StringVar(&serverAddr, "serverAddr", fmt.Sprintf("localhost:%s", os.Getenv("TRAFFIC_MANAGE_PORT")), "grpc server address")
 	flag.StringVar(&nodeId, "nodeId", "", "nodeId")
 	flag.StringVar(&resource, "resource", "", "resource")
 	urls := []string{

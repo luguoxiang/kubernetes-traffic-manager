@@ -1,5 +1,5 @@
 images:
-  envoyProxy: docker.io/luguoxiang/traffic-envoy-proxy:0.1
+  envoyProxy: docker.io/luguoxiang/traffic-envoy-proxy:1.11.0
   trafficControl: docker.io/luguoxiang/traffic-control
   envoyManager: docker.io/luguoxiang/envoy-manager
   

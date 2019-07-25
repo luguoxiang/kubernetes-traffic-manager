@@ -17,22 +17,17 @@ import (
 //listener filter for local pod or outbound listener filter for headless service pod
 type HttpPodIpFilterInfo struct {
 	PodIpFilterInfo
-	IngressTracing bool
-	Domains        map[string][]string
+	Tracing bool
+	Domains map[string][]string
 }
 
-func NewHttpPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool) ListenerInfo {
+func NewHttpPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool, tracing bool) ListenerInfo {
 	podFilter := NewPodIpFilterInfo(pod, port, headless)
 	result := &HttpPodIpFilterInfo{
 		PodIpFilterInfo: *podFilter,
-		IngressTracing:  true,
+		Tracing:         tracing,
 	}
-	for k, v := range pod.Labels {
-		switch k {
-		case "traffic.envoy.tracing.ingress":
-			result.IngressTracing = kubernetes.GetLabelValueBool(v)
-		}
-	}
+
 	for key, _ := range pod.Annotations {
 		service, svcPort := kubernetes.GetServiceAndPort(key)
 		if svcPort != port {
@@ -53,7 +48,7 @@ func NewHttpPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool)
 }
 
 func (info *HttpPodIpFilterInfo) String() string {
-	return fmt.Sprintf("%s:%d, tracing=%v", info.podIP, info.port, info.IngressTracing)
+	return fmt.Sprintf("%s:%d, tracing=%v", info.podIP, info.port, info.Tracing)
 }
 
 func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string, podCluserName string) []route.VirtualHost {
@@ -130,10 +125,18 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 			Name: common.RouterHttpFilter,
 		}},
 	}
-	//headless outbound acess will be traced at target headless service pod
-	if info.IngressTracing && node.Id == info.node {
-		manager.Tracing = &hcm.HttpConnectionManager_Tracing{
-			OperationName: hcm.INGRESS,
+
+	if info.Tracing {
+		if node.Id == info.node {
+			//local inbound tracing
+			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
+				OperationName: hcm.INGRESS,
+			}
+		} else {
+			//headless outbound tracing
+			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
+				OperationName: hcm.EGRESS,
+			}
 		}
 	}
 	filterConfig, err := types.MarshalAny(manager)

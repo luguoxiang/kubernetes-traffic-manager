@@ -36,9 +36,10 @@ func (info *OutboundClusterInfo) Type() string {
 	return common.ClusterResource
 }
 
-func (info *OutboundClusterInfo) CreateCluster() *v2.Cluster {
+func (info *OutboundClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 	result := &v2.Cluster{
-		Name: info.Name(),
+		Name:           info.Name(),
+		ConnectTimeout: info.ConnectionTimeout,
 		ClusterDiscoveryType: &v2.Cluster_Type{
 			Type: v2.Cluster_EDS,
 		},

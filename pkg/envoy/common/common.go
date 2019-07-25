@@ -129,19 +129,24 @@ func (cps *ControlPlaneService) UpdateResource(resource EnvoyResource, resourceV
 	if cps.versionMap[name] == resourceVersion {
 		return
 	}
-
-	if resourceVersion == "" {
-		glog.Infof("RemoveResource %s", resource.String())
+	oldResource := cps.resourceMap[name]
+	if oldResource != nil && resourceVersion == "" {
+		glog.Infof("REMOVE %T %s", resource, resource.String())
 		delete(cps.resourceMap, name)
 		delete(cps.versionMap, name)
 
 		cps.cond.Broadcast()
 		return
 	}
-	if reflect.DeepEqual(cps.resourceMap[name], resource) {
+
+	if reflect.DeepEqual(oldResource, resource) {
 		return
 	}
-	glog.Infof("ADD %T %s, version=%s", resource, resource.String(), resourceVersion)
+	if oldResource == nil {
+		glog.Infof("ADD %T %s, version=%s", resource, resource.String(), resourceVersion)
+	} else {
+		glog.Infof("UPDATE %T %s, version=%s", resource, resource.String(), resourceVersion)
+	}
 	cps.resourceMap[name] = resource
 
 	cps.versionMap[name] = resourceVersion
@@ -159,7 +164,9 @@ func (cps *ControlPlaneService) ProcessRequest(req *v2.DiscoveryRequest, builder
 		resourceMap, currentVersion = cps.GetResources(req.ResourceNames)
 
 		if currentVersion == req.VersionInfo {
-			glog.Infof("Waiting update on %s for %v, current version=%s", req.TypeUrl, req.ResourceNames, currentVersion)
+			if glog.V(2) {
+				glog.Infof("Waiting update on %s for %v, current version=%s", req.TypeUrl, req.ResourceNames, currentVersion)
+			}
 			cps.cond.Wait()
 		} else {
 			break
