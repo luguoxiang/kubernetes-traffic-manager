@@ -5,7 +5,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/golang/glog"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"strings"
 	"time"
 )
@@ -32,16 +31,16 @@ func NewAggregatedDiscoveryService(cds *ClustersControlPlaneService,
 }
 func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	switch req.TypeUrl {
-	case common.EndpointResource:
+	case EndpointResource:
 		return ads.eds.ProcessRequest(req, ads.eds.BuildResource)
-	case common.ClusterResource:
+	case ClusterResource:
 		return ads.cds.ProcessRequest(req, ads.cds.BuildResource)
-	case common.ListenerResource:
+	case ListenerResource:
 		//always request all resources
 		req.ResourceNames = nil
 		return ads.lds.ProcessRequest(req, ads.lds.BuildResource)
 		//case RouteResource:
-	case common.SecretResource:
+	case SecretResource:
 		return ads.sds.ProcessRequest(req, ads.sds.BuildResource)
 	default:
 		return nil, fmt.Errorf("Unsupported TypeUrl" + req.TypeUrl)

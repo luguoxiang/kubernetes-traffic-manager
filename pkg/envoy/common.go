@@ -1,4 +1,4 @@
-package common
+package envoy
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -28,6 +28,9 @@ const (
 	TLS_INSPECTOR         = "envoy.listener.tls_inspector"
 	ORIGINAL_DST          = "envoy.listener.original_dst"
 	HttpFaultInjection    = "envoy.fault"
+
+	CLUSTER_PROTO_DIRECT = "direct"
+	CLUSTER_PROTO_HTTP   = "http"
 )
 
 type stream interface {

@@ -7,7 +7,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"reflect"
 	"sort"
@@ -41,7 +40,7 @@ func NewEndpointInfo(svc string, ns string, port uint32) *EndpointInfo {
 }
 
 func EndpointName(svc string, ns string, port uint32) string {
-	return common.OutboundClusterName(svc, ns, port)
+	return OutboundClusterName(svc, ns, port)
 }
 
 func (info *EndpointInfo) String() string {
@@ -53,14 +52,14 @@ func (info *EndpointInfo) String() string {
 }
 
 func (info *EndpointInfo) Name() string {
-	return common.OutboundClusterName(info.Service, info.Namespace, info.Port)
+	return OutboundClusterName(info.Service, info.Namespace, info.Port)
 }
 
 func (info *EndpointInfo) Type() string {
-	return common.EndpointResource
+	return EndpointResource
 }
 
-func (info *EndpointInfo) Clone() common.EnvoyResourceClonable {
+func (info *EndpointInfo) Clone() EnvoyResourceClonable {
 	result := &EndpointInfo{
 		Service:     info.Service,
 		Namespace:   info.Namespace,
@@ -85,12 +84,12 @@ func (info *EndpointInfo) Version() string {
 }
 
 type EndpointsControlPlaneService struct {
-	*common.ControlPlaneService
+	*ControlPlaneService
 }
 
 func NewEndpointsControlPlaneService(k8sManager *kubernetes.K8sResourceManager) *EndpointsControlPlaneService {
 	return &EndpointsControlPlaneService{
-		ControlPlaneService: common.NewControlPlaneService(k8sManager),
+		ControlPlaneService: NewControlPlaneService(k8sManager),
 	}
 }
 
@@ -171,7 +170,7 @@ func (cps *EndpointsControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	}
 }
 
-func (cps *EndpointsControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (cps *EndpointsControlPlaneService) BuildResource(resourceMap map[string]EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 
 	var claList []proto.Message
 	for _, resource := range resourceMap {
@@ -216,5 +215,5 @@ func (cps *EndpointsControlPlaneService) BuildResource(resourceMap map[string]co
 		claList = append(claList, cla)
 	}
 
-	return common.MakeResource(claList, common.EndpointResource, version)
+	return MakeResource(claList, EndpointResource, version)
 }

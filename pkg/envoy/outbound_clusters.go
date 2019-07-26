@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
 type OutboundClusterInfo struct {
-	common.ClusterConfigInfo
+	ClusterConfigInfo
 
 	Service   string
 	Namespace string
@@ -29,11 +28,11 @@ func (info *OutboundClusterInfo) String() string {
 }
 
 func (info *OutboundClusterInfo) Name() string {
-	return common.OutboundClusterName(info.Service, info.Namespace, info.Port)
+	return OutboundClusterName(info.Service, info.Namespace, info.Port)
 }
 
 func (info *OutboundClusterInfo) Type() string {
-	return common.ClusterResource
+	return ClusterResource
 }
 
 func (info *OutboundClusterInfo) CreateCluster(nodeId string) *v2.Cluster {

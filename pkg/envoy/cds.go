@@ -5,25 +5,24 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"reflect"
 )
 
 type ClusterInfo interface {
-	common.EnvoyResource
+	EnvoyResource
 	CreateCluster(nodeId string) *v2.Cluster
 }
 
 type ClustersControlPlaneService struct {
-	*common.ControlPlaneService
+	*ControlPlaneService
 }
 
 func NewClustersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) *ClustersControlPlaneService {
-	return &ClustersControlPlaneService{ControlPlaneService: common.NewControlPlaneService(k8sManager)}
+	return &ClustersControlPlaneService{ControlPlaneService: NewControlPlaneService(k8sManager)}
 }
 
-func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 	var clusters []proto.Message
 
 	for _, resource := range resourceMap {
@@ -35,7 +34,7 @@ func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]com
 		clusters = append(clusters, serviceCluster)
 	}
 
-	return common.MakeResource(clusters, common.ClusterResource, version)
+	return MakeResource(clusters, ClusterResource, version)
 }
 
 func (cps *ClustersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo) bool {
@@ -44,11 +43,12 @@ func (cps *ClustersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo
 
 func (cps *ClustersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	for _, port := range svc.Ports {
-		if svc.IsKubeAPIService() {
+		protocol := svc.Protocol(port.Port)
+		if protocol == CLUSTER_PROTO_DIRECT {
 			cluster := NewByPassClusterInfo(svc, port.Port)
 			cluster.ConfigCluster(svc.Labels)
 			cps.UpdateResource(cluster, svc.ResourceVersion)
-		} else if svc.Protocol(port.Port) != "" {
+		} else if protocol != "" {
 			cluster := NewOutboundClusterInfo(svc, port.Port)
 			cluster.ConfigCluster(svc.Labels)
 			cps.UpdateResource(cluster, svc.ResourceVersion)

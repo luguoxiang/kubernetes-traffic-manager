@@ -8,7 +8,6 @@ import (
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
@@ -33,14 +32,14 @@ func (info *ClusterIpFilterInfo) String() string {
 }
 
 func (info *ClusterIpFilterInfo) Type() string {
-	return common.ListenerResource
+	return ListenerResource
 }
 func (info *ClusterIpFilterInfo) Name() string {
 	return info.ClusterName()
 }
 
 func (info *ClusterIpFilterInfo) ClusterName() string {
-	return common.OutboundClusterName(info.service, info.namespace, info.port)
+	return OutboundClusterName(info.service, info.namespace, info.port)
 }
 
 func (info *ClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
@@ -69,7 +68,7 @@ func (info *ClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 			},
 		},
 		Filters: []listener.Filter{{
-			Name:       common.TCPProxy,
+			Name:       TCPProxy,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},
 	}, nil

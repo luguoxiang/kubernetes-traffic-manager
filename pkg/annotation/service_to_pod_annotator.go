@@ -2,6 +2,7 @@ package annotation
 
 import (
 	"github.com/golang/glog"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
@@ -105,6 +106,14 @@ func (manager *ServiceToPodAnnotator) ServiceValid(svc *kubernetes.ServiceInfo) 
 }
 
 func (pa *ServiceToPodAnnotator) ServiceAdded(svc *kubernetes.ServiceInfo) {
+	if svc.IsKubeAPIService() {
+		for _, port := range svc.Ports {
+			key := kubernetes.ServicePortProtocol(port.Port)
+			pa.k8sManager.AddServiceLabel(svc, key, envoy.CLUSTER_PROTO_DIRECT)
+		}
+
+		return
+	}
 	for _, resource := range pa.k8sManager.GetMatchedResources(svc, kubernetes.POD_TYPE) {
 		pod := resource.(*kubernetes.PodInfo)
 		if pod.EnvoyEnabled() {

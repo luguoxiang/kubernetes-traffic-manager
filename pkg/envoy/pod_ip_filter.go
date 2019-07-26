@@ -7,7 +7,6 @@ import (
 	accesslog_filter "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	tp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/types"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"strings"
 )
@@ -37,7 +36,7 @@ func (info *PodIpFilterInfo) String() string {
 }
 
 func (info *PodIpFilterInfo) Type() string {
-	return common.ListenerResource
+	return ListenerResource
 }
 
 func (info *PodIpFilterInfo) Name() string {
@@ -71,7 +70,7 @@ func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Filter
 			&accesslog_filter.AccessLog{
 				Name: "envoy.file_access_log",
 				ConfigType: &accesslog_filter.AccessLog_TypedConfig{
-					TypedConfig: common.CreateAccessLogAny(false),
+					TypedConfig: CreateAccessLogAny(false),
 				},
 			},
 		},
@@ -92,7 +91,7 @@ func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Filter
 			},
 		},
 		Filters: []listener.Filter{{
-			Name:       common.TCPProxy,
+			Name:       TCPProxy,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},
 	}, nil

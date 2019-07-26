@@ -50,9 +50,6 @@ func (service *ServiceInfo) GetSelector() map[string]string {
 }
 
 func (service *ServiceInfo) OutboundEnabled() bool {
-	if service.IsKubeAPIService() {
-		return true
-	}
 	for _, port := range service.Ports {
 		key := ServicePortProtocol(port.Port)
 		if service.Labels[key] != "" {
@@ -107,7 +104,7 @@ func NewServiceInfo(service *v1.Service) *ServiceInfo {
 
 }
 
-func (manager *K8sResourceManager) UpdateServiceAnnotation(serviceInfo *ServiceInfo, annotation map[string]*string) error {
+func (manager *K8sResourceManager) AddServiceLabel(serviceInfo *ServiceInfo, key string, value string) error {
 	var err error
 	var rawService *v1.Service
 	for i := 0; i < 3; i++ {
@@ -115,24 +112,12 @@ func (manager *K8sResourceManager) UpdateServiceAnnotation(serviceInfo *ServiceI
 		if err != nil {
 			return err
 		}
-		changed := false
-		for k, v := range annotation {
-			if v != nil && rawService.Annotations == nil {
-				rawService.Annotations = make(map[string]string)
-			}
-			current, ok := rawService.Annotations[k]
-			if v == nil && ok {
-				delete(rawService.Annotations, k)
-				changed = true
-			}
-			if v != nil && current != *v {
-				rawService.Annotations[k] = *v
-				changed = true
-			}
-		}
-		if !changed {
+
+		if rawService.Labels[key] == value {
 			return nil
 		}
+		rawService.Labels[key] = value
+
 		_, err = manager.clientSet.CoreV1().Services(serviceInfo.Namespace()).Update(rawService)
 		if err == nil {
 			return nil

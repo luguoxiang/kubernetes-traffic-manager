@@ -5,13 +5,12 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"strings"
 	"time"
 )
 
 type StaticClusterInfo struct {
-	common.ClusterConfigInfo
+	ClusterConfigInfo
 
 	IP     string
 	Port   uint32
@@ -51,7 +50,7 @@ func (info *StaticClusterInfo) Name() string {
 }
 
 func (info *StaticClusterInfo) Type() string {
-	return common.ClusterResource
+	return ClusterResource
 }
 
 func (info *StaticClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
