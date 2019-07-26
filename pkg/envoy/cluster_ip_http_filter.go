@@ -108,13 +108,8 @@ func (info *HttpClusterIpFilterInfo) CreateVirtualHost() route.VirtualHost {
 }
 
 func (info *HttpClusterIpFilterInfo) createHttpFilters() []*hcm.HttpFilter {
-	httpFilters := []*hcm.HttpFilter{{
-		Name: common.RouterHttpFilter,
-	}}
-	targetCluster := common.OutboundClusterName(info.service, info.namespace, info.port)
-	faultConfig := &httpfault.HTTPFault{
-		UpstreamCluster: targetCluster,
-	}
+	httpFilters := []*hcm.HttpFilter{}
+	faultConfig := &httpfault.HTTPFault{}
 	if info.FaultInjectionFixDelayPercentage > 0 {
 		faultConfig.Delay = &fault.FaultDelay{
 			Type: fault.FaultDelay_FIXED,
@@ -149,6 +144,9 @@ func (info *HttpClusterIpFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 			ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: filterConfigStruct},
 		})
 	}
+	httpFilters = append(httpFilters, &hcm.HttpFilter{
+		Name: common.RouterHttpFilter,
+	})
 	return httpFilters
 }
 func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
