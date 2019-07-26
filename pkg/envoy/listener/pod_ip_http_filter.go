@@ -120,9 +120,12 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 				VirtualHosts: info.CreateVirtualHosts(node.Id, podCluserName),
 			},
 		},
-		HttpFilters: []*hcm.HttpFilter{{
-			Name: common.RouterHttpFilter,
-		}},
+		HttpFilters: []*hcm.HttpFilter{
+			info.CreateHttpFaultFilter(),
+			&hcm.HttpFilter{
+				Name: common.RouterHttpFilter,
+			},
+		},
 	}
 
 	if info.Tracing {

@@ -5,7 +5,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	"github.com/gogo/protobuf/types"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
-
 	"time"
 )
 

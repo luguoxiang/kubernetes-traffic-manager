@@ -1,6 +1,13 @@
 package listener
 
 import (
+	fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
+	httpfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
+	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/gogo/protobuf/types"
+	"github.com/golang/glog"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"time"
 )
@@ -51,4 +58,59 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 			info.RateLimitKbps = kubernetes.GetLabelValueUInt64(v)
 		}
 	}
+}
+
+func (info *HttpListenerConfigInfo) CreateHttpFaultFilter() *hcm.HttpFilter {
+
+	faultConfig := &httpfault.HTTPFault{}
+	changed := false
+	if info.FaultInjectionFixDelayPercentage > 0 {
+		faultConfig.Delay = &fault.FaultDelay{
+			Type: fault.FaultDelay_FIXED,
+			FaultDelaySecifier: &fault.FaultDelay_FixedDelay{
+				FixedDelay: &info.FaultInjectionFixDelay,
+			},
+			Percentage: &_type.FractionalPercent{
+				Numerator:   info.FaultInjectionFixDelayPercentage,
+				Denominator: _type.FractionalPercent_HUNDRED,
+			},
+		}
+		changed = true
+	}
+	if info.FaultInjectionAbortPercentage > 0 {
+		faultConfig.Abort = &httpfault.FaultAbort{
+			ErrorType: &httpfault.FaultAbort_HttpStatus{
+				HttpStatus: info.FaultInjectionAbortStatus,
+			},
+			Percentage: &_type.FractionalPercent{
+				Numerator:   info.FaultInjectionAbortPercentage,
+				Denominator: _type.FractionalPercent_HUNDRED,
+			},
+		}
+		changed = true
+	}
+	if info.RateLimitKbps > 0 {
+		faultConfig.ResponseRateLimit = &fault.FaultRateLimit{
+			LimitType: &fault.FaultRateLimit_FixedLimit_{
+				FixedLimit: &fault.FaultRateLimit_FixedLimit{
+					LimitKbps: info.RateLimitKbps,
+				},
+			},
+		}
+		changed = true
+	}
+	if !changed {
+		return nil
+	}
+
+	filterConfigStruct, err := types.MarshalAny(faultConfig)
+	if err != nil {
+		glog.Warningf("Failed to MarshalAny HTTPFault: %s", err.Error())
+		panic(err.Error())
+	}
+	return &hcm.HttpFilter{
+		Name:       common.HttpFaultInjection,
+		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: filterConfigStruct},
+	}
+
 }

@@ -6,10 +6,9 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
-	httpfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
+
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	_type "github.com/envoyproxy/go-control-plane/envoy/type"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
@@ -66,58 +65,6 @@ func (info *HttpClusterIpFilterInfo) CreateVirtualHost() route.VirtualHost {
 
 }
 
-func (info *HttpClusterIpFilterInfo) createHttpFilters() []*hcm.HttpFilter {
-	httpFilters := []*hcm.HttpFilter{}
-	faultConfig := &httpfault.HTTPFault{}
-	if info.FaultInjectionFixDelayPercentage > 0 {
-		faultConfig.Delay = &fault.FaultDelay{
-			Type: fault.FaultDelay_FIXED,
-			FaultDelaySecifier: &fault.FaultDelay_FixedDelay{
-				FixedDelay: &info.FaultInjectionFixDelay,
-			},
-			Percentage: &_type.FractionalPercent{
-				Numerator:   info.FaultInjectionFixDelayPercentage,
-				Denominator: _type.FractionalPercent_HUNDRED,
-			},
-		}
-	}
-	if info.FaultInjectionAbortPercentage > 0 {
-		faultConfig.Abort = &httpfault.FaultAbort{
-			ErrorType: &httpfault.FaultAbort_HttpStatus{
-				HttpStatus: info.FaultInjectionAbortStatus,
-			},
-			Percentage: &_type.FractionalPercent{
-				Numerator:   info.FaultInjectionAbortPercentage,
-				Denominator: _type.FractionalPercent_HUNDRED,
-			},
-		}
-	}
-	if info.RateLimitKbps > 0 {
-		faultConfig.ResponseRateLimit = &fault.FaultRateLimit{
-			LimitType: &fault.FaultRateLimit_FixedLimit_{
-				FixedLimit: &fault.FaultRateLimit_FixedLimit{
-					LimitKbps: info.RateLimitKbps,
-				},
-			},
-		}
-	}
-	if faultConfig.Delay != nil || faultConfig.Abort != nil || faultConfig.ResponseRateLimit != nil {
-		filterConfigStruct, err := types.MarshalAny(faultConfig)
-		if err != nil {
-			glog.Warningf("Failed to MarshalAny HTTPFault: %s", err.Error())
-			panic(err.Error())
-		}
-		httpFilters = append(httpFilters, &hcm.HttpFilter{
-			Name:       common.HttpFaultInjection,
-			ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: filterConfigStruct},
-		})
-	}
-
-	httpFilters = append(httpFilters, &hcm.HttpFilter{
-		Name: common.RouterHttpFilter,
-	})
-	return httpFilters
-}
 func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
 	if info.clusterIP == "" || info.clusterIP == "None" {
 		return listener.FilterChain{}, nil
@@ -133,7 +80,12 @@ func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listene
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: routeConfig,
 		},
-		HttpFilters: info.createHttpFilters(),
+		HttpFilters: []*hcm.HttpFilter{
+			info.CreateHttpFaultFilter(),
+			&hcm.HttpFilter{
+				Name: common.RouterHttpFilter,
+			},
+		},
 	}
 
 	if info.Tracing {

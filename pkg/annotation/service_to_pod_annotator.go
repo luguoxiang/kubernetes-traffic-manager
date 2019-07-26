@@ -15,7 +15,18 @@ var (
 		"traffic.connection.timeout",
 		"traffic.retries.max",
 		"traffic.connection.max",
-		"traffic.request.max-pending"}
+		"traffic.request.max-pending",
+
+		"traffic.request.timeout",
+		"traffic.retries.5xx",
+		"traffic.retries.connect-failure",
+		"traffic.retries.gateway-error",
+		"traffic.fault.delay.time",
+		"traffic.fault.delay.percentage",
+		"traffic.fault.abort.status",
+		"traffic.fault.abort.percentage",
+		"traffic.rate.limit",
+	}
 
 	//annotations also need to be applied on ingress pods
 	ServiceAnnotations = []string{
