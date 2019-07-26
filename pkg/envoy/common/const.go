@@ -17,4 +17,6 @@ const (
 
 	PROTO_DIRECT = "direct"
 	PROTO_HTTP   = "http"
+
+	LOCALHOST = "127.0.0.1"
 )

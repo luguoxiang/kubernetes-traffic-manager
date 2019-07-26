@@ -51,7 +51,7 @@ func (info *PodIpFilterInfo) getClusterName(nodeId string) string {
 			return cluster.StaticClusterName(info.podIP, info.port)
 		}
 		//use local loop interface to access local workload
-		return cluster.StaticLocalClusterName(info.port)
+		return cluster.StaticClusterName(common.LOCALHOST, info.port)
 	} else {
 		if info.Headless {
 			return cluster.StaticClusterName(info.podIP, info.port)

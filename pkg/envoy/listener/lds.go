@@ -50,18 +50,18 @@ func (cps *ListenersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInf
 
 func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	for _, port := range svc.Ports {
-		var info common.EnvoyResource
 		protocol := svc.Protocol(port.Port)
 		if svc.IsKubeAPIService() {
-			info = NewClusterIpFilterInfo(svc, port.Port)
+			info := NewClusterIpFilterInfo(svc, port.Port)
+			cps.UpdateResource(info, svc.ResourceVersion)
 		} else if protocol == common.PROTO_HTTP {
-			info = NewHttpClusterIpFilterInfo(svc, port.Port)
+			info := NewHttpClusterIpFilterInfo(svc, port.Port)
+			info.Config(svc.Labels)
+			cps.UpdateResource(info, svc.ResourceVersion)
 		} else if protocol != "" {
-			info = NewClusterIpFilterInfo(svc, port.Port)
-		} else {
-			continue
+			info := NewClusterIpFilterInfo(svc, port.Port)
+			cps.UpdateResource(info, svc.ResourceVersion)
 		}
-		cps.UpdateResource(info, svc.ResourceVersion)
 	}
 }
 func (cps *ListenersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
@@ -90,44 +90,40 @@ func (manager *ListenersControlPlaneService) PodValid(pod *kubernetes.PodInfo) b
 }
 
 func (cps *ListenersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
-	for port, portInfo := range pod.GetPortMap() {
-		var info common.EnvoyResource
-		if portInfo.Protocol == common.PROTO_HTTP {
-			info = NewHttpPodIpFilterInfo(pod, port, portInfo.Headless, portInfo.Tracing)
-		} else {
-			info = NewPodIpFilterInfo(pod, port, portInfo.Headless)
-		}
-		cps.UpdateResource(info, pod.ResourceVersion)
-	}
-
+	cps.PodUpdated(nil, pod)
 }
 func (cps *ListenersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
-	for port, portInfo := range pod.GetPortMap() {
-		info := NewPodIpFilterInfo(pod, port, portInfo.Headless)
-		cps.UpdateResource(info, "")
-	}
+	cps.PodUpdated(pod, nil)
 }
 
 func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
 	visited := make(map[string]bool)
 
-	for port, portInfo := range newPod.GetPortMap() {
-		var info common.EnvoyResource
-		if portInfo.Protocol == "http" {
-			info = NewHttpPodIpFilterInfo(newPod, port, portInfo.Headless, portInfo.Tracing)
-		} else {
-			info = NewPodIpFilterInfo(newPod, port, portInfo.Headless)
-		}
-		visited[info.Name()] = true
-		cps.UpdateResource(info, newPod.ResourceVersion)
-	}
+	if newPod != nil {
+		for port, portInfo := range newPod.GetPortConfig() {
+			configMap := portInfo.ConfigMap
+			headless := (configMap != nil && kubernetes.GetLabelValueBool(configMap[kubernetes.HEADLESS]))
+			if portInfo.Protocol == common.PROTO_HTTP {
+				info := NewHttpPodIpFilterInfo(newPod, port, headless)
+				info.Config(portInfo.ConfigMap)
+				visited[info.Name()] = true
+				cps.UpdateResource(info, newPod.ResourceVersion)
+			} else {
+				info := NewPodIpFilterInfo(newPod, port, headless)
+				visited[info.Name()] = true
+				cps.UpdateResource(info, newPod.ResourceVersion)
+			}
 
-	for port, portInfo := range oldPod.GetPortMap() {
-		info := NewPodIpFilterInfo(oldPod, port, portInfo.Headless)
-		if visited[info.Name()] {
-			continue
 		}
-		cps.UpdateResource(info, "")
+	}
+	if oldPod != nil {
+		for port, _ := range oldPod.GetPortSet() {
+			info := NewPodIpFilterInfo(oldPod, port, true)
+			if visited[info.Name()] {
+				continue
+			}
+			cps.UpdateResource(info, "")
+		}
 	}
 }
 

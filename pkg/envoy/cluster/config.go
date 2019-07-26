@@ -17,9 +17,9 @@ type ClusterConfigInfo struct {
 	ConnectionTimeout  time.Duration
 }
 
-func (info *ClusterConfigInfo) ConfigCluster(labels map[string]string) {
+func (info *ClusterConfigInfo) Config(config map[string]string) {
 	info.ConnectionTimeout = time.Duration(60*1000) * time.Millisecond
-	for k, v := range labels {
+	for k, v := range config {
 		switch k {
 		case "traffic.connection.timeout":
 			info.ConnectionTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond

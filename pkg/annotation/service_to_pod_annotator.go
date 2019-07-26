@@ -7,13 +7,20 @@ import (
 )
 
 var (
-	TRUE_STR                   = "true"
-	FALSE_STR                  = "false"
+	TRUE_STR  = "true"
+	FALSE_STR = "false"
+
+	//annotations also need to be applied on headless service pods
 	HeadlessServiceAnnotations = []string{
 		"traffic.connection.timeout",
 		"traffic.retries.max",
 		"traffic.connection.max",
 		"traffic.request.max-pending"}
+
+	//annotations also need to be applied on ingress pods
+	ServiceAnnotations = []string{
+		"traffic.tracing.enabled",
+	}
 )
 
 type ServiceToPodAnnotator struct {
@@ -33,7 +40,12 @@ func (pa *ServiceToPodAnnotator) PodValid(pod *kubernetes.PodInfo) bool {
 func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
 	annotations := map[string]*string{
 		kubernetes.PodHeadlessByService(svc.Name()): nil,
-		kubernetes.PodTracingByService(svc.Name()):  nil,
+	}
+	for _, key := range HeadlessServiceAnnotations {
+		if svc.Labels[key] != "" {
+			podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
+			annotations[podKey] = nil
+		}
 	}
 	for _, port := range svc.Ports {
 		key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
@@ -47,30 +59,34 @@ func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.Po
 
 func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
 	annotations := map[string]*string{}
-	key := kubernetes.PodTracingByService(svc.Name())
-	traceEnabled := svc.Labels[kubernetes.TRACING_ENABLED]
-	if traceEnabled != "" {
-		annotations[key] = &traceEnabled
-	}
 
 	for _, port := range svc.Ports {
 		svc_key := kubernetes.ServicePortProtocol(port.Port)
 		protocol := svc.Labels[svc_key]
 		if protocol != "" {
-			key = kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
+			key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
 			annotations[key] = &protocol
 		}
 
 	}
 
+	for _, key := range ServiceAnnotations {
+		if svc.Labels[key] != "" {
+			headlessValue := svc.Labels[key]
+			podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
+			annotations[podKey] = &headlessValue
+		}
+	}
+
 	if svc.ClusterIP == "None" {
-		key = kubernetes.PodHeadlessByService(svc.Name())
+		key := kubernetes.PodHeadlessByService(svc.Name())
 		annotations[key] = &TRUE_STR
 
 		for _, key := range HeadlessServiceAnnotations {
 			if svc.Labels[key] != "" {
 				headlessValue := svc.Labels[key]
-				annotations[key] = &headlessValue
+				podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
+				annotations[podKey] = &headlessValue
 			}
 		}
 	}

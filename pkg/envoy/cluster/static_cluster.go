@@ -18,24 +18,14 @@ type StaticClusterInfo struct {
 	NodeId string
 }
 
-func NewStaticLocalClusterInfo(port uint32) *StaticClusterInfo {
-	info := &StaticClusterInfo{
-		IP:   "127.0.0.1",
-		Port: port,
-	}
-	info.ConnectionTimeout = time.Duration(60*1000) * time.Millisecond
-	return info
-}
-
 func NewStaticClusterInfo(ip string, port uint32, nodeId string) *StaticClusterInfo {
-	return &StaticClusterInfo{
+	info := &StaticClusterInfo{
 		IP:     ip,
 		Port:   port,
 		NodeId: nodeId,
 	}
-}
-func StaticLocalClusterName(port uint32) string {
-	return StaticClusterName("127.0.0.1", port)
+	info.ConnectionTimeout = time.Duration(60*1000) * time.Millisecond
+	return info
 }
 
 func StaticClusterName(ip string, port uint32) string {
@@ -85,7 +75,7 @@ func (info *StaticClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 			}},
 		},
 	}
-	if info.NodeId != nodeId {
+	if info.IP != common.LOCALHOST && info.NodeId != nodeId {
 		info.ApplyClusterConfig(result)
 	}
 	return result

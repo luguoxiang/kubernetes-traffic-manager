@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"fmt"
+	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
@@ -61,10 +62,9 @@ func (pod *PodInfo) HasHeadlessService() bool {
 }
 
 type PodPortInfo struct {
-	Port     uint32
-	Protocol string
-	Headless bool
-	Tracing  bool
+	Protocol  string
+	Service   string
+	ConfigMap map[string]string
 }
 
 func GetServiceAndPort(annotation string) (string, uint32) {
@@ -80,28 +80,60 @@ func GetServiceAndPort(annotation string) (string, uint32) {
 	}
 	return "", 0
 }
-
-func (pod *PodInfo) GetPortMap() map[uint32]PodPortInfo {
-	result := make(map[uint32]PodPortInfo)
-	for key, v := range pod.Annotations {
-		service, port := GetServiceAndPort(key)
-		if service != "" && port != 0 {
-			oldInfo := result[port]
-			oldInfo.Port = port
-			// do not override http protocol and headless
-			if !oldInfo.Headless {
-				key = PodHeadlessByService(service)
-				oldInfo.Headless = GetLabelValueBool(pod.Annotations[key])
-			}
-			if !oldInfo.Tracing {
-				key = PodTracingByService(service)
-				oldInfo.Tracing = GetLabelValueBool(pod.Annotations[key])
-			}
-			if v != "" && (oldInfo.Protocol == "" || oldInfo.Protocol == "tcp") {
-				oldInfo.Protocol = v
-			}
-			result[port] = oldInfo
+func (pod *PodInfo) GetPortSet() map[uint32]bool {
+	result := make(map[uint32]bool)
+	for k, v := range pod.Annotations {
+		if v == "" {
+			continue
 		}
+
+		_, port := GetServiceAndPort(k)
+		result[port] = true
+
+	}
+	return result
+}
+func (pod *PodInfo) GetPortConfig() map[uint32]PodPortInfo {
+	serviceConfig := make(map[string]map[string]string)
+	for k, v := range pod.Annotations {
+		if v == "" {
+			continue
+		}
+		tokens := strings.Split(k, ".")
+		if len(tokens) < 4 || tokens[0] != "traffic" || tokens[1] != "svc" {
+			continue
+		}
+		service := tokens[2]
+
+		configMap := serviceConfig[service]
+		if configMap == nil {
+			configMap = make(map[string]string)
+			serviceConfig[service] = configMap
+		}
+		newKey := "traffic" + k[len("traffic.svc.")+len(service):]
+		configMap[newKey] = v
+
+	}
+	result := make(map[uint32]PodPortInfo)
+	for k, v := range pod.Annotations {
+		if v == "" {
+			continue
+		}
+
+		service, port := GetServiceAndPort(k)
+		if service != "" && port != 0 {
+			podPortInfo := PodPortInfo{
+				Service:   service,
+				ConfigMap: serviceConfig[service],
+				Protocol:  v,
+			}
+			oldInfo := result[port]
+			if oldInfo.ConfigMap != nil {
+				glog.Warningf("port %d belongs to more than one services, use %s's config", service)
+			}
+			result[port] = podPortInfo
+		}
+
 	}
 	return result
 }

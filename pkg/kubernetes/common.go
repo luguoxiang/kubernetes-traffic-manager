@@ -18,11 +18,11 @@ const (
 	ENVOY_ENABLED_BY_DEPLOYMENT = "traffic.envoy.deployment.enabled"
 	ENVOY_PROXY_ANNOTATION      = "traffic.envoy.proxy"
 	LOCAL_ACCESS_POD_IP         = "traffic.envoy.local.use_podip"
-	TRACING_ENABLED             = "traffic.tracing.enabled"
 	ENDPOINT_WEIGHT             = "traffic.endpoint.weight"
 	DEFAULT_WEIGHT              = 100
 
 	POD_SERVICE_PREFIX = "traffic.svc."
+	HEADLESS           = "traffic.headless"
 )
 
 func GetLabelValueUInt32(value string) uint32 {
@@ -71,15 +71,15 @@ func PodPortProtcolByService(svc string, port uint32) string {
 }
 
 func PodEnvoyByService(svc string) string {
-	return fmt.Sprintf("%s%s.envoy", POD_SERVICE_PREFIX, svc)
+	return PodKeyByService(svc, "envoy")
+}
+
+func PodKeyByService(svc string, key string) string {
+	return fmt.Sprintf("%s%s.%s", POD_SERVICE_PREFIX, svc, key)
 }
 
 func PodHeadlessByService(svc string) string {
-	return fmt.Sprintf("%s%s.headless", POD_SERVICE_PREFIX, svc)
-}
-
-func PodTracingByService(svc string) string {
-	return fmt.Sprintf("%s%s.tracing", POD_SERVICE_PREFIX, svc)
+	return PodKeyByService(svc, "headless")
 }
 
 func (e ResourceType) String() string {

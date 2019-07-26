@@ -7,7 +7,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
-	"reflect"
 )
 
 type ClusterInfo interface {
@@ -43,41 +42,39 @@ func (cps *ClustersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo
 }
 
 func (cps *ClustersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
-	for _, port := range svc.Ports {
-		protocol := svc.Protocol(port.Port)
-		if protocol == common.PROTO_DIRECT {
-			cluster := NewStaticClusterInfo(svc.ClusterIP, port.Port, "")
-			cluster.ConfigCluster(svc.Labels)
-			cps.UpdateResource(cluster, svc.ResourceVersion)
-		} else if protocol != "" {
-			cluster := NewServiceClusterInfo(svc, port.Port)
-			cluster.ConfigCluster(svc.Labels)
-			cps.UpdateResource(cluster, svc.ResourceVersion)
-		}
-
-	}
-
+	cps.ServiceUpdated(nil, svc)
 }
 
 func (cps *ClustersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
-	for _, port := range svc.Ports {
-		protocol := svc.Protocol(port.Port)
-		if protocol == common.PROTO_DIRECT {
-			cluster := NewStaticClusterInfo(svc.ClusterIP, port.Port, "")
-			cps.UpdateResource(cluster, "")
-		} else if protocol != "" {
-			cluster := NewServiceClusterInfo(svc, port.Port)
-			cps.UpdateResource(cluster, "")
+	cps.ServiceUpdated(svc, nil)
+}
+func (cps *ClustersControlPlaneService) ServiceUpdated(oldService, newService *kubernetes.ServiceInfo) {
+	visited := make(map[string]bool)
+	if newService != nil {
+		for _, port := range newService.Ports {
+			protocol := newService.Protocol(port.Port)
+			if protocol == common.PROTO_DIRECT {
+				cluster := NewByPassClusterInfo(newService, port.Port)
+				cluster.Config(newService.Labels)
+				visited[cluster.Name()] = true
+				cps.UpdateResource(cluster, newService.ResourceVersion)
+			} else if protocol != "" {
+				cluster := NewServiceClusterInfo(newService, port.Port)
+				cluster.Config(newService.Labels)
+				visited[cluster.Name()] = true
+				cps.UpdateResource(cluster, newService.ResourceVersion)
+			}
+
 		}
 	}
 
-}
-func (cps *ClustersControlPlaneService) ServiceUpdated(oldService, newService *kubernetes.ServiceInfo) {
-	if !reflect.DeepEqual(oldService.Ports, newService.Ports) {
-		cps.ServiceDeleted(oldService)
-		cps.ServiceAdded(newService)
-	} else {
-		cps.ServiceAdded(newService)
+	if oldService != nil {
+		for _, port := range oldService.Ports {
+			cluster := NewServiceClusterInfo(oldService, port.Port)
+			if !visited[cluster.Name()] {
+				cps.UpdateResource(cluster, "")
+			}
+		}
 	}
 }
 
@@ -87,21 +84,34 @@ func (cps *ClustersControlPlaneService) PodValid(pod *kubernetes.PodInfo) bool {
 }
 
 func (cps *ClustersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
-	for port, _ := range pod.GetPortMap() {
-		cluster := NewStaticLocalClusterInfo(port)
-		cps.UpdateResource(cluster, "1")
-
-		cluster = NewStaticClusterInfo(pod.PodIP, port, pod.NodeId())
-		cluster.ConfigCluster(pod.Annotations)
-		cps.UpdateResource(cluster, pod.ResourceVersion)
-	}
+	cps.PodUpdated(nil, pod)
 }
 func (cps *ClustersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
-	for port, _ := range pod.GetPortMap() {
-		cluster := NewStaticClusterInfo(pod.PodIP, port, pod.NodeId())
-		cps.UpdateResource(cluster, "")
-	}
+	cps.PodUpdated(pod, nil)
 }
 func (cps *ClustersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
-	cps.PodAdded(newPod)
+	visited := make(map[string]bool)
+	if newPod != nil {
+		for port, config := range newPod.GetPortConfig() {
+			cluster := NewStaticClusterInfo(common.LOCALHOST, port, "")
+			cps.UpdateResource(cluster, "1")
+
+			cluster = NewStaticClusterInfo(newPod.PodIP, port, newPod.NodeId())
+
+			visited[cluster.Name()] = true
+			cluster.Config(config.ConfigMap)
+
+			cps.UpdateResource(cluster, newPod.ResourceVersion)
+		}
+	}
+
+	if oldPod != nil {
+		for port, _ := range oldPod.GetPortSet() {
+			cluster := NewStaticClusterInfo(oldPod.PodIP, port, oldPod.NodeId())
+			if !visited[cluster.Name()] {
+				cps.UpdateResource(cluster, "")
+			}
+		}
+	}
+
 }

@@ -17,15 +17,14 @@ import (
 //listener filter for local pod or outbound listener filter for headless service pod
 type HttpPodIpFilterInfo struct {
 	PodIpFilterInfo
-	Tracing bool
+	HttpListenerConfigInfo
 	Domains map[string][]string
 }
 
-func NewHttpPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool, tracing bool) ListenerInfo {
+func NewHttpPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool) *HttpPodIpFilterInfo {
 	podFilter := NewPodIpFilterInfo(pod, port, headless)
 	result := &HttpPodIpFilterInfo{
 		PodIpFilterInfo: *podFilter,
-		Tracing:         tracing,
 	}
 
 	for key, _ := range pod.Annotations {
