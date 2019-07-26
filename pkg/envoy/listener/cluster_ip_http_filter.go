@@ -30,6 +30,8 @@ type HttpClusterIpFilterInfo struct {
 
 	FaultInjectionAbortPercentage uint32
 	FaultInjectionAbortStatus     uint32
+
+	RateLimitKbps uint64
 }
 
 func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpClusterIpFilterInfo {
@@ -64,6 +66,8 @@ func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpC
 			info.FaultInjectionAbortStatus = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.fault.abort.percentage":
 			info.FaultInjectionAbortPercentage = kubernetes.GetLabelValueUInt32(v)
+		case "traffic.rate.limit":
+			info.RateLimitKbps = kubernetes.GetLabelValueUInt64(v)
 		}
 	}
 
@@ -132,7 +136,16 @@ func (info *HttpClusterIpFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 			},
 		}
 	}
-	if faultConfig.Delay != nil || faultConfig.Abort != nil {
+	if info.RateLimitKbps > 0 {
+		faultConfig.ResponseRateLimit = &fault.FaultRateLimit{
+			LimitType: &fault.FaultRateLimit_FixedLimit_{
+				FixedLimit: &fault.FaultRateLimit_FixedLimit{
+					LimitKbps: info.RateLimitKbps,
+				},
+			},
+		}
+	}
+	if faultConfig.Delay != nil || faultConfig.Abort != nil || faultConfig.ResponseRateLimit != nil {
 		filterConfigStruct, err := types.MarshalAny(faultConfig)
 		if err != nil {
 			glog.Warningf("Failed to MarshalAny HTTPFault: %s", err.Error())
@@ -143,6 +156,7 @@ func (info *HttpClusterIpFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 			ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: filterConfigStruct},
 		})
 	}
+
 	httpFilters = append(httpFilters, &hcm.HttpFilter{
 		Name: common.RouterHttpFilter,
 	})

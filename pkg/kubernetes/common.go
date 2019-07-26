@@ -36,6 +36,17 @@ func GetLabelValueUInt32(value string) uint32 {
 	return uint32(i)
 }
 
+func GetLabelValueUInt64(value string) uint64 {
+	if value == "" {
+		return 0
+	}
+	i, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return uint64(i)
+}
+
 func GetLabelValueBool(value string) bool {
 	return strings.EqualFold(value, "true")
 }

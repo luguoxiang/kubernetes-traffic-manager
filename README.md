@@ -80,6 +80,7 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
 | Service | traffic.fault.abort.status | 0 | abort with http status |
 | Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
+| Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
 | Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
 | Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
 
