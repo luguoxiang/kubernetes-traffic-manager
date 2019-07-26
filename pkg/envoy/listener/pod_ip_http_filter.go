@@ -1,4 +1,4 @@
-package envoy
+package listener
 
 import (
 	"fmt"
@@ -8,8 +8,9 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	accesslog_filter "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-
 	"github.com/gogo/protobuf/types"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
@@ -36,7 +37,7 @@ func NewHttpPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool,
 			if result.Domains == nil {
 				result.Domains = make(map[string][]string)
 			}
-			cluster := OutboundClusterName(service, pod.Namespace(), port)
+			cluster := cluster.ServiceClusterName(service, pod.Namespace(), port)
 			result.Domains[cluster] = []string{
 				fmt.Sprintf("%s:%d", service, port),
 				fmt.Sprintf("%s:%d.%s", service, port, pod.Namespace()),
@@ -110,7 +111,7 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 			&accesslog_filter.AccessLog{
 				Name: "envoy.file_access_log",
 				ConfigType: &accesslog_filter.AccessLog_TypedConfig{
-					TypedConfig: CreateAccessLogAny(true),
+					TypedConfig: common.CreateAccessLogAny(true),
 				},
 			},
 		},
@@ -121,7 +122,7 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 			},
 		},
 		HttpFilters: []*hcm.HttpFilter{{
-			Name: RouterHttpFilter,
+			Name: common.RouterHttpFilter,
 		}},
 	}
 
@@ -152,7 +153,7 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 			},
 		},
 		Filters: []listener.Filter{{
-			Name:       HTTPConnectionManager,
+			Name:       common.HTTPConnectionManager,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},
 	}, nil

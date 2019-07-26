@@ -1,10 +1,11 @@
-package envoy
+package cluster
 
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"strings"
 	"time"
 )
@@ -50,7 +51,7 @@ func (info *StaticClusterInfo) Name() string {
 }
 
 func (info *StaticClusterInfo) Type() string {
-	return ClusterResource
+	return common.ClusterResource
 }
 
 func (info *StaticClusterInfo) CreateCluster(nodeId string) *v2.Cluster {

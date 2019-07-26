@@ -5,6 +5,9 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/golang/glog"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
 	"strings"
 	"time"
 )
@@ -15,15 +18,15 @@ const (
 )
 
 type AggregatedDiscoveryService struct {
-	cds *ClustersControlPlaneService
+	cds *cluster.ClustersControlPlaneService
 	eds *EndpointsControlPlaneService
-	lds *ListenersControlPlaneService
+	lds *listener.ListenersControlPlaneService
 	sds *SecretsControlPlaneService
 }
 
-func NewAggregatedDiscoveryService(cds *ClustersControlPlaneService,
+func NewAggregatedDiscoveryService(cds *cluster.ClustersControlPlaneService,
 	eds *EndpointsControlPlaneService,
-	lds *ListenersControlPlaneService,
+	lds *listener.ListenersControlPlaneService,
 	sds *SecretsControlPlaneService) *AggregatedDiscoveryService {
 	return &AggregatedDiscoveryService{
 		cds: cds, eds: eds, lds: lds, sds: sds,
@@ -31,16 +34,16 @@ func NewAggregatedDiscoveryService(cds *ClustersControlPlaneService,
 }
 func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	switch req.TypeUrl {
-	case EndpointResource:
+	case common.EndpointResource:
 		return ads.eds.ProcessRequest(req, ads.eds.BuildResource)
-	case ClusterResource:
+	case common.ClusterResource:
 		return ads.cds.ProcessRequest(req, ads.cds.BuildResource)
-	case ListenerResource:
+	case common.ListenerResource:
 		//always request all resources
 		req.ResourceNames = nil
 		return ads.lds.ProcessRequest(req, ads.lds.BuildResource)
 		//case RouteResource:
-	case SecretResource:
+	case common.SecretResource:
 		return ads.sds.ProcessRequest(req, ads.sds.BuildResource)
 	default:
 		return nil, fmt.Errorf("Unsupported TypeUrl" + req.TypeUrl)

@@ -1,4 +1,4 @@
-package envoy
+package common
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -14,25 +14,15 @@ import (
 	"sync"
 )
 
-const (
-	typePrefix            = "type.googleapis.com/envoy.api.v2."
-	EndpointResource      = typePrefix + "ClusterLoadAssignment"
-	ClusterResource       = typePrefix + "Cluster"
-	RouteResource         = typePrefix + "RouteConfiguration"
-	ListenerResource      = typePrefix + "Listener"
-	SecretResource        = typePrefix + "auth.Secret"
-	XdsCluster            = "xds_cluster"
-	RouterHttpFilter      = "envoy.router"
-	HTTPConnectionManager = "envoy.http_connection_manager"
-	TCPProxy              = "envoy.tcp_proxy"
-	TLS_INSPECTOR         = "envoy.listener.tls_inspector"
-	ORIGINAL_DST          = "envoy.listener.original_dst"
-	HttpFaultInjection    = "envoy.fault"
-
-	CLUSTER_PROTO_DIRECT = "direct"
-	CLUSTER_PROTO_HTTP   = "http"
-)
-
+type EnvoyResource interface {
+	Name() string
+	Type() string
+	String() string
+}
+type EnvoyResourceClonable interface {
+	EnvoyResource
+	Clone() EnvoyResourceClonable
+}
 type stream interface {
 	Send(*v2.DiscoveryResponse) error
 	Recv() (*v2.DiscoveryRequest, error)

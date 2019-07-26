@@ -1,10 +1,11 @@
-package envoy
+package cluster
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	"github.com/gogo/protobuf/types"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
+
 	"time"
 )
 
@@ -66,14 +67,4 @@ func (info *ClusterConfigInfo) ApplyClusterConfig(clusterInfo *v2.Cluster) {
 			Thresholds: []*cluster.CircuitBreakers_Thresholds{&threshold},
 		}
 	}
-}
-
-type EnvoyResource interface {
-	Name() string
-	Type() string
-	String() string
-}
-type EnvoyResourceClonable interface {
-	EnvoyResource
-	Clone() EnvoyResourceClonable
 }

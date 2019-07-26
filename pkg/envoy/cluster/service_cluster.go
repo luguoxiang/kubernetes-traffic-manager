@@ -1,13 +1,15 @@
-package envoy
+package cluster
 
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
+	"strings"
 )
 
-type OutboundClusterInfo struct {
+type ServiceClusterInfo struct {
 	ClusterConfigInfo
 
 	Service   string
@@ -15,27 +17,31 @@ type OutboundClusterInfo struct {
 	Port      uint32
 }
 
-func NewOutboundClusterInfo(svc *kubernetes.ServiceInfo, port uint32) *OutboundClusterInfo {
-	return &OutboundClusterInfo{
+func ServiceClusterName(svc string, ns string, port uint32) string {
+	return fmt.Sprintf("%d|%s|%s.outbound", port, ns, strings.Replace(svc, ".", "_", -1))
+}
+
+func NewServiceClusterInfo(svc *kubernetes.ServiceInfo, port uint32) *ServiceClusterInfo {
+	return &ServiceClusterInfo{
 		Service:   svc.Name(),
 		Namespace: svc.Namespace(),
 		Port:      port,
 	}
 }
 
-func (info *OutboundClusterInfo) String() string {
+func (info *ServiceClusterInfo) String() string {
 	return fmt.Sprintf("%s.%s:%d,mr=%d,ct=%v", info.Service, info.Namespace, info.Port, info.MaxRetries, info.ConnectionTimeout)
 }
 
-func (info *OutboundClusterInfo) Name() string {
-	return OutboundClusterName(info.Service, info.Namespace, info.Port)
+func (info *ServiceClusterInfo) Name() string {
+	return ServiceClusterName(info.Service, info.Namespace, info.Port)
 }
 
-func (info *OutboundClusterInfo) Type() string {
-	return ClusterResource
+func (info *ServiceClusterInfo) Type() string {
+	return common.ClusterResource
 }
 
-func (info *OutboundClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
+func (info *ServiceClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 	result := &v2.Cluster{
 		Name:           info.Name(),
 		ConnectTimeout: info.ConnectionTimeout,

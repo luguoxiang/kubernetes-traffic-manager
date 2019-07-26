@@ -8,6 +8,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/annotation"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"google.golang.org/grpc"
 	"net"
@@ -46,9 +48,9 @@ func main() {
 		panic(err.Error())
 	}
 
-	cds := envoy.NewClustersControlPlaneService(k8sManager)
+	cds := cluster.NewClustersControlPlaneService(k8sManager)
 	eds := envoy.NewEndpointsControlPlaneService(k8sManager)
-	lds := envoy.NewListenersControlPlaneService(k8sManager)
+	lds := listener.NewListenersControlPlaneService(k8sManager)
 	sds := envoy.NewSecretsControlPlaneService(k8sManager)
 
 	serviceToPodAnnotator := annotation.NewServiceToPodAnnotator(k8sManager)

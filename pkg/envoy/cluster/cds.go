@@ -1,28 +1,29 @@
-package envoy
+package cluster
 
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"reflect"
 )
 
 type ClusterInfo interface {
-	EnvoyResource
+	common.EnvoyResource
 	CreateCluster(nodeId string) *v2.Cluster
 }
 
 type ClustersControlPlaneService struct {
-	*ControlPlaneService
+	*common.ControlPlaneService
 }
 
 func NewClustersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) *ClustersControlPlaneService {
-	return &ClustersControlPlaneService{ControlPlaneService: NewControlPlaneService(k8sManager)}
+	return &ClustersControlPlaneService{ControlPlaneService: common.NewControlPlaneService(k8sManager)}
 }
 
-func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 	var clusters []proto.Message
 
 	for _, resource := range resourceMap {
@@ -34,7 +35,7 @@ func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]Env
 		clusters = append(clusters, serviceCluster)
 	}
 
-	return MakeResource(clusters, ClusterResource, version)
+	return common.MakeResource(clusters, common.ClusterResource, version)
 }
 
 func (cps *ClustersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo) bool {
@@ -44,12 +45,12 @@ func (cps *ClustersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo
 func (cps *ClustersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	for _, port := range svc.Ports {
 		protocol := svc.Protocol(port.Port)
-		if protocol == CLUSTER_PROTO_DIRECT {
-			cluster := NewByPassClusterInfo(svc, port.Port)
+		if protocol == common.PROTO_DIRECT {
+			cluster := NewStaticClusterInfo(svc.ClusterIP, port.Port, "")
 			cluster.ConfigCluster(svc.Labels)
 			cps.UpdateResource(cluster, svc.ResourceVersion)
 		} else if protocol != "" {
-			cluster := NewOutboundClusterInfo(svc, port.Port)
+			cluster := NewServiceClusterInfo(svc, port.Port)
 			cluster.ConfigCluster(svc.Labels)
 			cps.UpdateResource(cluster, svc.ResourceVersion)
 		}
@@ -57,10 +58,17 @@ func (cps *ClustersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo
 	}
 
 }
+
 func (cps *ClustersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
 	for _, port := range svc.Ports {
-		cluster := NewOutboundClusterInfo(svc, port.Port)
-		cps.UpdateResource(cluster, "")
+		protocol := svc.Protocol(port.Port)
+		if protocol == common.PROTO_DIRECT {
+			cluster := NewStaticClusterInfo(svc.ClusterIP, port.Port, "")
+			cps.UpdateResource(cluster, "")
+		} else if protocol != "" {
+			cluster := NewServiceClusterInfo(svc, port.Port)
+			cps.UpdateResource(cluster, "")
+		}
 	}
 
 }

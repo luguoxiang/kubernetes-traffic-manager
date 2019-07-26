@@ -1,13 +1,11 @@
-package envoy
+package common
 
 import (
-	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
-	"strings"
 )
 
 func ContainsResource(resourceNames []string, resource string) bool {
@@ -65,15 +63,4 @@ func CreateAccessLogAny(isHttp bool) *types.Any {
 		panic(err.Error())
 	}
 	return result
-}
-
-func IngressAttribute(port uint32, attr string) string {
-	return fmt.Sprintf("traffic.svc.port.%d.ingress.%s", port, attr)
-}
-
-func OutboundClusterName(svc string, ns string, port uint32) string {
-	//envoy stat/prometheus will split the name by '.' and use last element as metrices name
-	//so this cluster name will have metrics
-	//envoy_cluster_outbound_upstream_cx_total{envoy_cluster_name="9080|reviews_default_svc",instance="10.1.73.6:8900",job="traffic-envoy-pods"}
-	return fmt.Sprintf("%d|%s|%s.outbound", port, ns, strings.Replace(svc, ".", "_", -1))
 }

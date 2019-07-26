@@ -1,4 +1,4 @@
-package envoy
+package listener
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -7,6 +7,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/types"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 )
 
 type BlackHoleFilterInfo struct {
@@ -17,7 +18,7 @@ func (info *BlackHoleFilterInfo) String() string {
 }
 
 func (info *BlackHoleFilterInfo) Type() string {
-	return ListenerResource
+	return common.ListenerResource
 }
 func (info *BlackHoleFilterInfo) Name() string {
 	return "blackhole"
@@ -52,7 +53,7 @@ func (info *BlackHoleFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 		},
 
 		HttpFilters: []*hcm.HttpFilter{{
-			Name: RouterHttpFilter,
+			Name: common.RouterHttpFilter,
 		}},
 	}
 	filterConfig, err := types.MarshalAny(manager)
@@ -61,7 +62,7 @@ func (info *BlackHoleFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 	}
 	return listener.FilterChain{
 		Filters: []listener.Filter{{
-			Name:       HTTPConnectionManager,
+			Name:       common.HTTPConnectionManager,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},
 	}, nil

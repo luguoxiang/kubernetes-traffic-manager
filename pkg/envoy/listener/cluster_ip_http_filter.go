@@ -1,4 +1,4 @@
-package envoy
+package listener
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 	_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
-
 	"time"
 )
 
@@ -139,12 +139,12 @@ func (info *HttpClusterIpFilterInfo) createHttpFilters() []*hcm.HttpFilter {
 			panic(err.Error())
 		}
 		httpFilters = append(httpFilters, &hcm.HttpFilter{
-			Name:       HttpFaultInjection,
+			Name:       common.HttpFaultInjection,
 			ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: filterConfigStruct},
 		})
 	}
 	httpFilters = append(httpFilters, &hcm.HttpFilter{
-		Name: RouterHttpFilter,
+		Name: common.RouterHttpFilter,
 	})
 	return httpFilters
 }
@@ -188,7 +188,7 @@ func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listene
 			},
 		},
 		Filters: []listener.Filter{{
-			Name:       HTTPConnectionManager,
+			Name:       common.HTTPConnectionManager,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},
 	}

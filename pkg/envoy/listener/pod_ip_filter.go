@@ -1,4 +1,4 @@
-package envoy
+package listener
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	accesslog_filter "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	tp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/types"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"strings"
 )
@@ -36,7 +38,7 @@ func (info *PodIpFilterInfo) String() string {
 }
 
 func (info *PodIpFilterInfo) Type() string {
-	return ListenerResource
+	return common.ListenerResource
 }
 
 func (info *PodIpFilterInfo) Name() string {
@@ -46,13 +48,13 @@ func (info *PodIpFilterInfo) Name() string {
 func (info *PodIpFilterInfo) getClusterName(nodeId string) string {
 	if nodeId == info.node {
 		if info.LocalAccessPodIP {
-			return StaticClusterName(info.podIP, info.port)
+			return cluster.StaticClusterName(info.podIP, info.port)
 		}
 		//use local loop interface to access local workload
-		return StaticLocalClusterName(info.port)
+		return cluster.StaticLocalClusterName(info.port)
 	} else {
 		if info.Headless {
-			return StaticClusterName(info.podIP, info.port)
+			return cluster.StaticClusterName(info.podIP, info.port)
 		}
 	}
 	return ""
@@ -70,7 +72,7 @@ func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Filter
 			&accesslog_filter.AccessLog{
 				Name: "envoy.file_access_log",
 				ConfigType: &accesslog_filter.AccessLog_TypedConfig{
-					TypedConfig: CreateAccessLogAny(false),
+					TypedConfig: common.CreateAccessLogAny(false),
 				},
 			},
 		},
@@ -91,7 +93,7 @@ func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Filter
 			},
 		},
 		Filters: []listener.Filter{{
-			Name:       TCPProxy,
+			Name:       common.TCPProxy,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},
 	}, nil

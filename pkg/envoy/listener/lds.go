@@ -1,4 +1,4 @@
-package envoy
+package listener
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -6,6 +6,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"os"
 	"reflect"
@@ -13,12 +14,12 @@ import (
 )
 
 type ListenerInfo interface {
-	EnvoyResource
+	common.EnvoyResource
 	CreateFilterChain(node *core.Node) (listener.FilterChain, error)
 }
 
 type ListenersControlPlaneService struct {
-	*ControlPlaneService
+	*common.ControlPlaneService
 	proxyPort uint32
 }
 
@@ -34,7 +35,7 @@ func NewListenersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) 
 		panic("wrong ENVOY_PROXY_PORT value:" + err.Error())
 	}
 	result := &ListenersControlPlaneService{
-		ControlPlaneService: NewControlPlaneService(k8sManager),
+		ControlPlaneService: common.NewControlPlaneService(k8sManager),
 		proxyPort:           uint32(proxyPort),
 	}
 	k8sManager.Lock()
@@ -48,12 +49,12 @@ func (cps *ListenersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInf
 }
 
 func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
-	var info EnvoyResource
 	for _, port := range svc.Ports {
+		var info common.EnvoyResource
 		protocol := svc.Protocol(port.Port)
 		if svc.IsKubeAPIService() {
 			info = NewClusterIpFilterInfo(svc, port.Port)
-		} else if protocol == CLUSTER_PROTO_HTTP {
+		} else if protocol == common.PROTO_HTTP {
 			info = NewHttpClusterIpFilterInfo(svc, port.Port)
 		} else if protocol != "" {
 			info = NewClusterIpFilterInfo(svc, port.Port)
@@ -64,8 +65,8 @@ func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInf
 	}
 }
 func (cps *ListenersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
-	var info EnvoyResource
 	for _, port := range svc.Ports {
+		var info common.EnvoyResource
 		protocol := svc.Protocol(port.Port)
 		if protocol != "" {
 			info = NewClusterIpFilterInfo(svc, port.Port)
@@ -89,9 +90,9 @@ func (manager *ListenersControlPlaneService) PodValid(pod *kubernetes.PodInfo) b
 }
 
 func (cps *ListenersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
-	var info EnvoyResource
 	for port, portInfo := range pod.GetPortMap() {
-		if portInfo.Protocol == CLUSTER_PROTO_HTTP {
+		var info common.EnvoyResource
+		if portInfo.Protocol == common.PROTO_HTTP {
 			info = NewHttpPodIpFilterInfo(pod, port, portInfo.Headless, portInfo.Tracing)
 		} else {
 			info = NewPodIpFilterInfo(pod, port, portInfo.Headless)
@@ -101,9 +102,8 @@ func (cps *ListenersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
 
 }
 func (cps *ListenersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
-	var info EnvoyResource
 	for port, portInfo := range pod.GetPortMap() {
-		info = NewPodIpFilterInfo(pod, port, portInfo.Headless)
+		info := NewPodIpFilterInfo(pod, port, portInfo.Headless)
 		cps.UpdateResource(info, "")
 	}
 }
@@ -111,8 +111,8 @@ func (cps *ListenersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
 func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
 	visited := make(map[string]bool)
 
-	var info EnvoyResource
 	for port, portInfo := range newPod.GetPortMap() {
+		var info common.EnvoyResource
 		if portInfo.Protocol == "http" {
 			info = NewHttpPodIpFilterInfo(newPod, port, portInfo.Headless, portInfo.Tracing)
 		} else {
@@ -123,7 +123,7 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	}
 
 	for port, portInfo := range oldPod.GetPortMap() {
-		info = NewPodIpFilterInfo(oldPod, port, portInfo.Headless)
+		info := NewPodIpFilterInfo(oldPod, port, portInfo.Headless)
 		if visited[info.Name()] {
 			continue
 		}
@@ -131,7 +131,7 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	}
 }
 
-func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 	var filterChains []listener.FilterChain
 
 	for _, resource := range resourceMap {
@@ -166,9 +166,9 @@ func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]En
 		FilterChains: filterChains,
 		ListenerFilters: []listener.ListenerFilter{
 			listener.ListenerFilter{
-				Name: ORIGINAL_DST,
+				Name: common.ORIGINAL_DST,
 			},
 		},
 	}
-	return MakeResource([]proto.Message{l}, ListenerResource, version)
+	return common.MakeResource([]proto.Message{l}, common.ListenerResource, version)
 }

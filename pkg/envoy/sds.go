@@ -6,6 +6,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
@@ -21,7 +22,7 @@ func (info *SecretResourceInfo) Name() string {
 }
 
 func (info *SecretResourceInfo) Type() string {
-	return SecretResource
+	return common.SecretResource
 }
 
 func (info *SecretResourceInfo) String() string {
@@ -29,11 +30,11 @@ func (info *SecretResourceInfo) String() string {
 }
 
 type SecretsControlPlaneService struct {
-	*ControlPlaneService
+	*common.ControlPlaneService
 }
 
 func NewSecretsControlPlaneService(k8sManager *kubernetes.K8sResourceManager) *SecretsControlPlaneService {
-	return &SecretsControlPlaneService{ControlPlaneService: NewControlPlaneService(k8sManager)}
+	return &SecretsControlPlaneService{ControlPlaneService: common.NewControlPlaneService(k8sManager)}
 }
 
 func (*SecretsControlPlaneService) SecretValid(info *kubernetes.SecretInfo) bool {
@@ -60,7 +61,7 @@ func (sds *SecretsControlPlaneService) SecretUpdated(oldSecret, newSecret *kuber
 	sds.SecretAdded(newSecret)
 }
 
-func (sds *SecretsControlPlaneService) BuildResource(resourceMap map[string]EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (sds *SecretsControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 	var secrets []proto.Message
 
 	for _, resource := range resourceMap {
@@ -84,5 +85,5 @@ func (sds *SecretsControlPlaneService) BuildResource(resourceMap map[string]Envo
 		})
 	}
 
-	return MakeResource(secrets, SecretResource, version)
+	return common.MakeResource(secrets, common.SecretResource, version)
 }
