@@ -16,9 +16,30 @@ type ClusterConfigInfo struct {
 	ConnectionTimeout  time.Duration
 }
 
+func NeedServiceToPodAnnotation(label string, headless bool) bool {
+	switch label {
+	case "traffic.connection.timeout":
+		fallthrough
+	case "traffic.retries.max":
+		fallthrough
+	case "traffic.connection.max":
+		fallthrough
+	case "traffic.request.max-pending":
+		fallthrough
+	case "traffic.request.max":
+		return headless
+	default:
+		return false
+	}
+
+}
+
 func (info *ClusterConfigInfo) Config(config map[string]string) {
 	info.ConnectionTimeout = time.Duration(60*1000) * time.Millisecond
 	for k, v := range config {
+		if v == "" {
+			continue
+		}
 		switch k {
 		case "traffic.connection.timeout":
 			info.ConnectionTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond

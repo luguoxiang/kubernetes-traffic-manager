@@ -27,11 +27,41 @@ type HttpListenerConfigInfo struct {
 	RateLimitKbps uint64
 }
 
+func NeedServiceToPodAnnotation(label string, headless bool) bool {
+	switch label {
+	case "traffic.tracing.enabled":
+		return true
+	case "traffic.request.timeout":
+		fallthrough
+	case "traffic.retries.5xx":
+		fallthrough
+	case "traffic.retries.connect-failure":
+		fallthrough
+	case "traffic.retries.gateway-error":
+		fallthrough
+	case "traffic.fault.delay.time":
+		fallthrough
+	case "traffic.fault.delay.percentage":
+		fallthrough
+	case "traffic.fault.abort.status":
+		fallthrough
+	case "traffic.fault.abort.percentage":
+		fallthrough
+	case "traffic.rate.limit":
+		return headless
+	default:
+		return false
+	}
+}
+
 func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 	info.FaultInjectionAbortStatus = 503
 	info.FaultInjectionFixDelay = time.Second
 
 	for k, v := range config {
+		if v == "" {
+			continue
+		}
 		switch k {
 		case "traffic.tracing.enabled":
 			info.Tracing = kubernetes.GetLabelValueBool(v)

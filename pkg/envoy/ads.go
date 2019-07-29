@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/endpoint"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
 	"strings"
 	"time"
@@ -19,12 +20,12 @@ const (
 
 type AggregatedDiscoveryService struct {
 	cds *cluster.ClustersControlPlaneService
-	eds *EndpointsControlPlaneService
+	eds *endpoint.EndpointsControlPlaneService
 	lds *listener.ListenersControlPlaneService
 }
 
 func NewAggregatedDiscoveryService(cds *cluster.ClustersControlPlaneService,
-	eds *EndpointsControlPlaneService,
+	eds *endpoint.EndpointsControlPlaneService,
 	lds *listener.ListenersControlPlaneService) *AggregatedDiscoveryService {
 	return &AggregatedDiscoveryService{
 		cds: cds, eds: eds, lds: lds,

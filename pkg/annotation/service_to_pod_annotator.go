@@ -1,16 +1,16 @@
 package annotation
 
 import (
-	"fmt"
 	"github.com/golang/glog"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	envoy "github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
-	"strings"
 )
 
 var (
 
-	//annotations also need to be applied on headless service pods
+	//annotations need to be applied on headless service pods
 	HeadlessServiceAnnotations = []string{
 		"traffic.connection.timeout",
 		"traffic.retries.max",
@@ -26,11 +26,6 @@ var (
 		"traffic.fault.abort.status",
 		"traffic.fault.abort.percentage",
 		"traffic.rate.limit",
-	}
-
-	//annotations also need to be applied on ingress pods
-	ServiceAnnotations = []string{
-		"traffic.tracing.enabled",
 	}
 )
 
@@ -51,7 +46,7 @@ func (pa *ServiceToPodAnnotator) PodValid(pod *kubernetes.PodInfo) bool {
 func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
 	var annotationKeys []string
 	for key, _ := range pod.Annotations {
-		if strings.HasPrefix(key, fmt.Sprintf("%s%s.", kubernetes.POD_SERVICE_PREFIX, svc.Name())) {
+		if kubernetes.AnnotationHasServiceLabel(svc.Name(), key) {
 			annotationKeys = append(annotationKeys, key)
 		}
 	}
@@ -78,25 +73,19 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 		}
 
 	}
-
-	for _, key := range ServiceAnnotations {
-		if svc.Labels[key] != "" {
-			headlessValue := svc.Labels[key]
-			podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
-			annotations[podKey] = headlessValue
-		}
-	}
-
+	headless := false
 	if svc.ClusterIP == "None" {
 		key := kubernetes.PodHeadlessByService(svc.Name())
 		annotations[key] = "true"
-
-		for _, key := range HeadlessServiceAnnotations {
-			if svc.Labels[key] != "" {
-				headlessValue := svc.Labels[key]
-				podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
-				annotations[podKey] = headlessValue
-			}
+		headless = true
+	}
+	for key, value := range svc.Labels {
+		if value == "" {
+			continue
+		}
+		if cluster.NeedServiceToPodAnnotation(key, headless) || listener.NeedServiceToPodAnnotation(key, headless) {
+			podKey := kubernetes.ServiceLabelToPodAnnotation(svc.Name(), key)
+			annotations[podKey] = value
 		}
 	}
 

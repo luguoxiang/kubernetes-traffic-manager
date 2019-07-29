@@ -2,8 +2,8 @@ package annotation
 
 import (
 	"github.com/golang/glog"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/endpoint"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
-	"strings"
 )
 
 type DeploymentToPodAnnotator struct {
@@ -23,7 +23,7 @@ func (annotator *DeploymentToPodAnnotator) PodValid(pod *kubernetes.PodInfo) boo
 func (annotator *DeploymentToPodAnnotator) removeDeploymentAnnotateToPod(pod *kubernetes.PodInfo, deployment *kubernetes.DeploymentInfo) {
 	var annotationKeys []string
 	for key, _ := range pod.Annotations {
-		if strings.HasPrefix(key, kubernetes.POD_DEPLOYMENT_PREFIX) {
+		if kubernetes.AnnotationHasDeploymentLabel(key) {
 			annotationKeys = append(annotationKeys, key)
 		}
 	}
@@ -42,14 +42,15 @@ func (annotator *DeploymentToPodAnnotator) addDeploymentAnnotateToPod(pod *kuber
 	annotations := make(map[string]string)
 
 	//propagate deployment labels to pod
-	value := deployment.Labels[kubernetes.ENDPOINT_WEIGHT]
-	if value != "" {
-		annotations[kubernetes.ENDPOINT_WEIGHT_BY_DEPLOYMENT] = value
-	}
 
-	value = deployment.Labels[kubernetes.ENVOY_ENABLED]
-	if value != "" {
-		annotations[kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT] = value
+	for key, value := range deployment.Labels {
+		if value == "" {
+			continue
+		}
+		if endpoint.NeedDeploymentToPodAnnotation(key) {
+			podKey := kubernetes.DeploymentLabelToPodAnnotation(key)
+			annotations[podKey] = value
+		}
 	}
 
 	if len(annotations) == 0 {

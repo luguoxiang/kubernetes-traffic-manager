@@ -30,20 +30,6 @@ func (pod *PodInfo) NodeId() string {
 	return fmt.Sprintf("%s.%s", pod.Name(), pod.Namespace())
 }
 
-func (pod *PodInfo) Weight() uint32 {
-	value := pod.Annotations[ENDPOINT_WEIGHT_BY_DEPLOYMENT]
-	if value != "" {
-		result := GetLabelValueUInt32(value)
-		if result > 128 {
-			return 128
-		} else {
-			return result
-		}
-	}
-
-	return DEFAULT_WEIGHT
-}
-
 func (pod *PodInfo) EnvoyEnabled() bool {
 	if pod.Labels[ENVOY_ENABLED] != "" {
 		//ENVOY_ENABLED label will overide annotation set by deployment label

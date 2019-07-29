@@ -14,12 +14,11 @@ const (
 	DEPLOYMENT_TYPE ResourceType = 2
 	POD_TYPE        ResourceType = 3
 
-	ENVOY_ENABLED                 = "traffic.envoy.enabled"
-	ENDPOINT_WEIGHT               = "traffic.endpoint.weight"
-	ENDPOINT_WEIGHT_BY_DEPLOYMENT = "traffic.deployment.endpoint.weight"
-	ENVOY_ENABLED_BY_DEPLOYMENT   = "traffic.deployment.envoy.enabled"
-	ENVOY_PROXY_ANNOTATION        = "traffic.envoy.proxy"
-	LOCAL_ACCESS_POD_IP           = "traffic.envoy.local.use_podip"
+	ENVOY_ENABLED = "traffic.envoy.enabled"
+
+	ENVOY_ENABLED_BY_DEPLOYMENT = "traffic.deployment.envoy.enabled"
+	ENVOY_PROXY_ANNOTATION      = "traffic.envoy.proxy"
+	LOCAL_ACCESS_POD_IP         = "traffic.envoy.local.use_podip"
 
 	DEFAULT_WEIGHT = 100
 
@@ -73,16 +72,35 @@ func PodPortProtcolByService(svc string, port uint32) string {
 	return fmt.Sprintf("%s%s.port.%d", POD_SERVICE_PREFIX, svc, port)
 }
 
-func PodEnvoyByService(svc string) string {
-	return PodKeyByService(svc, "envoy")
-}
-
-func PodKeyByService(svc string, key string) string {
+func podKeyByService(svc string, key string) string {
 	return fmt.Sprintf("%s%s.%s", POD_SERVICE_PREFIX, svc, key)
 }
 
+func PodEnvoyByService(svc string) string {
+	return podKeyByService(svc, "envoy")
+}
+
+func AnnotationHasDeploymentLabel(label string) bool {
+	return strings.HasPrefix(label, "traffic.deployment.")
+}
+
+func DeploymentLabelToPodAnnotation(label string) string {
+	return fmt.Sprintf("traffic.deployment.%s", label[len("traffic."):])
+}
+
+func DeploymentAnnotationToLabel(label string) string {
+	return fmt.Sprintf("traffic.%s", label[len("traffic.deployment."):])
+}
+
+func AnnotationHasServiceLabel(svc string, label string) bool {
+	return strings.HasPrefix(label, fmt.Sprintf("%s%s.", POD_SERVICE_PREFIX, svc))
+}
+
+func ServiceLabelToPodAnnotation(svc string, label string) string {
+	return podKeyByService(svc, label[len("traffic."):])
+}
 func PodHeadlessByService(svc string) string {
-	return PodKeyByService(svc, "headless")
+	return podKeyByService(svc, "headless")
 }
 
 func (e ResourceType) String() string {
