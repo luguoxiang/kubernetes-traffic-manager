@@ -21,15 +21,13 @@ type AggregatedDiscoveryService struct {
 	cds *cluster.ClustersControlPlaneService
 	eds *EndpointsControlPlaneService
 	lds *listener.ListenersControlPlaneService
-	sds *SecretsControlPlaneService
 }
 
 func NewAggregatedDiscoveryService(cds *cluster.ClustersControlPlaneService,
 	eds *EndpointsControlPlaneService,
-	lds *listener.ListenersControlPlaneService,
-	sds *SecretsControlPlaneService) *AggregatedDiscoveryService {
+	lds *listener.ListenersControlPlaneService) *AggregatedDiscoveryService {
 	return &AggregatedDiscoveryService{
-		cds: cds, eds: eds, lds: lds, sds: sds,
+		cds: cds, eds: eds, lds: lds,
 	}
 }
 func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
@@ -42,9 +40,8 @@ func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) 
 		//always request all resources
 		req.ResourceNames = nil
 		return ads.lds.ProcessRequest(req, ads.lds.BuildResource)
-		//case RouteResource:
-	case common.SecretResource:
-		return ads.sds.ProcessRequest(req, ads.sds.BuildResource)
+	//case common.RouteResource:
+	//case common.SecretResource:
 	default:
 		return nil, fmt.Errorf("Unsupported TypeUrl" + req.TypeUrl)
 	}

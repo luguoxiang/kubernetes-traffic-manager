@@ -51,12 +51,11 @@ func main() {
 	cds := cluster.NewClustersControlPlaneService(k8sManager)
 	eds := envoy.NewEndpointsControlPlaneService(k8sManager)
 	lds := listener.NewListenersControlPlaneService(k8sManager)
-	sds := envoy.NewSecretsControlPlaneService(k8sManager)
 
 	serviceToPodAnnotator := annotation.NewServiceToPodAnnotator(k8sManager)
 	deploymentToPodAnnotator := annotation.NewDeploymentToPodAnnotator(k8sManager)
 
-	ads := envoy.NewAggregatedDiscoveryService(cds, eds, lds, sds)
+	ads := envoy.NewAggregatedDiscoveryService(cds, eds, lds)
 
 	discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, ads)
 
@@ -66,7 +65,6 @@ func main() {
 	go k8sManager.WatchDeployments(stopper, k8sManager, deploymentToPodAnnotator)
 	go k8sManager.WatchStatefulSets(stopper, k8sManager, deploymentToPodAnnotator)
 	go k8sManager.WatchDaemonSets(stopper, k8sManager, deploymentToPodAnnotator)
-	go k8sManager.WatchSecrets(stopper, sds)
 
 	glog.Infof("grpc server listening %s, version=%s", grpcPort, BuildVersion)
 	go func() {
