@@ -1,11 +1,13 @@
 package main
 
 import (
+	"flag"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/docker"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
 func main() {
+	flag.Parse()
 	k8sManager, err := kubernetes.NewK8sResourceManager()
 	if err != nil {
 		panic(err.Error())
