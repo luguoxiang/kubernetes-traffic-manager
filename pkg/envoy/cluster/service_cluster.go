@@ -15,6 +15,8 @@ type ServiceClusterInfo struct {
 	Service   string
 	Namespace string
 	Port      uint32
+
+	LbPolicy int32
 }
 
 func ServiceClusterName(svc string, ns string, port uint32) string {
@@ -26,6 +28,14 @@ func NewServiceClusterInfo(svc *kubernetes.ServiceInfo, port uint32) *ServiceClu
 		Service:   svc.Name(),
 		Namespace: svc.Namespace(),
 		Port:      port,
+	}
+}
+func (info *ServiceClusterInfo) Config(config map[string]string) {
+	info.ClusterConfigInfo.Config(config)
+
+	v := config["traffic.lb.policy"]
+	if v != "" {
+		info.LbPolicy = v2.Cluster_LbPolicy_value[v]
 	}
 }
 
@@ -55,6 +65,7 @@ func (info *ServiceClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 				},
 			},
 		},
+		LbPolicy: v2.Cluster_LbPolicy(info.LbPolicy),
 	}
 	info.ApplyClusterConfig(result)
 	return result
