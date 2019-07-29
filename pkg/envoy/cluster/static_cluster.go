@@ -44,7 +44,7 @@ func (info *StaticClusterInfo) Type() string {
 	return common.ClusterResource
 }
 
-func (info *StaticClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
+func (info *StaticClusterInfo) CreateCluster() *v2.Cluster {
 
 	result := &v2.Cluster{
 		Name:           info.Name(),
@@ -75,8 +75,8 @@ func (info *StaticClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 			}},
 		},
 	}
-	if info.IP != common.LOCALHOST && info.NodeId != nodeId {
-		info.ApplyClusterConfig(result)
-	}
+
+	info.ApplyClusterConfig(result, info.IP == common.LOCALHOST)
+
 	return result
 }

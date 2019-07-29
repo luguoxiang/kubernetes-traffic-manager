@@ -11,7 +11,7 @@ import (
 
 type ClusterInfo interface {
 	common.EnvoyResource
-	CreateCluster(nodeId string) *v2.Cluster
+	CreateCluster() *v2.Cluster
 }
 
 type ClustersControlPlaneService struct {
@@ -27,7 +27,7 @@ func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]com
 
 	for _, resource := range resourceMap {
 		clusterInfo := resource.(ClusterInfo)
-		serviceCluster := clusterInfo.CreateCluster(node.Id)
+		serviceCluster := clusterInfo.CreateCluster()
 		if serviceCluster.ConnectTimeout == 0 {
 			panic(fmt.Sprintf("cluster %s connect timeout should not be zero", serviceCluster.Name))
 		}

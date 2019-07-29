@@ -104,7 +104,10 @@ func (info *HttpListenerConfigInfo) ApplyConfig(manager *hcm.HttpConnectionManag
 			}
 		}
 	}
-
+	//headless service will use pod ip egress filter's config, ingress side do not need config
+	if ingress {
+		return
+	}
 	faultConfig := &httpfault.HTTPFault{}
 	changed := false
 	if info.FaultInjectionFixDelayPercentage > 0 {

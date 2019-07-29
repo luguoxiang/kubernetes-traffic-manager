@@ -102,9 +102,7 @@ func (pa *ServiceToPodAnnotator) PodAdded(pod *kubernetes.PodInfo) {
 
 	for _, resource := range pa.k8sManager.GetMatchedResources(pod, kubernetes.SERVICE_TYPE) {
 		svc := resource.(*kubernetes.ServiceInfo)
-		if pod.EnvoyEnabled() {
-			pa.addServiceAnnotationToPod(pod, svc)
-		}
+		pa.addServiceAnnotationToPod(pod, svc)
 	}
 }
 
@@ -112,7 +110,7 @@ func (*ServiceToPodAnnotator) PodDeleted(pod *kubernetes.PodInfo) {
 	//ignore
 }
 func (pa *ServiceToPodAnnotator) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
-	pa.PodAdded(newPod)
+	//ignore
 }
 
 func (manager *ServiceToPodAnnotator) ServiceValid(svc *kubernetes.ServiceInfo) bool {
@@ -130,9 +128,7 @@ func (pa *ServiceToPodAnnotator) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	}
 	for _, resource := range pa.k8sManager.GetMatchedResources(svc, kubernetes.POD_TYPE) {
 		pod := resource.(*kubernetes.PodInfo)
-		if pod.EnvoyEnabled() {
-			pa.addServiceAnnotationToPod(pod, svc)
-		}
+		pa.addServiceAnnotationToPod(pod, svc)
 	}
 }
 func (pa *ServiceToPodAnnotator) ServiceDeleted(svc *kubernetes.ServiceInfo) {

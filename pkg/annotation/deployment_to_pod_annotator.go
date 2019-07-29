@@ -75,7 +75,7 @@ func (*DeploymentToPodAnnotator) PodDeleted(pod *kubernetes.PodInfo) {
 	//ignore
 }
 func (annotator *DeploymentToPodAnnotator) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
-	annotator.PodAdded(newPod)
+	//ignore
 }
 
 func (annotator *DeploymentToPodAnnotator) DeploymentValid(deployment *kubernetes.DeploymentInfo) bool {

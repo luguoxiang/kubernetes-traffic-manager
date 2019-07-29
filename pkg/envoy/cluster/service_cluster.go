@@ -51,7 +51,7 @@ func (info *ServiceClusterInfo) Type() string {
 	return common.ClusterResource
 }
 
-func (info *ServiceClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
+func (info *ServiceClusterInfo) CreateCluster() *v2.Cluster {
 	result := &v2.Cluster{
 		Name:           info.Name(),
 		ConnectTimeout: info.ConnectionTimeout,
@@ -67,6 +67,6 @@ func (info *ServiceClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 		},
 		LbPolicy: v2.Cluster_LbPolicy(info.LbPolicy),
 	}
-	info.ApplyClusterConfig(result)
+	info.ApplyClusterConfig(result, false)
 	return result
 }

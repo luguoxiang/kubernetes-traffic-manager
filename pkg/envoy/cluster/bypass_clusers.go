@@ -3,10 +3,8 @@ package cluster
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	"github.com/gogo/protobuf/types"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
@@ -27,7 +25,7 @@ func (info *ByPassClusterInfo) String() string {
 	return fmt.Sprintf("%s.%s:%d,mr=%d,ct=%v", info.Service, info.Namespace, info.Port, info.MaxRetries, info.ConnectionTimeout)
 }
 
-func (info *ByPassClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
+func (info *ByPassClusterInfo) CreateCluster() *v2.Cluster {
 	result := &v2.Cluster{
 		Name:           info.Name(),
 		ConnectTimeout: info.ConnectionTimeout,
@@ -58,14 +56,6 @@ func (info *ByPassClusterInfo) CreateCluster(nodeId string) *v2.Cluster {
 		},
 	}
 
-	if info.MaxRetries > 0 {
-		var threshold cluster.CircuitBreakers_Thresholds
-		threshold.MaxRetries = &types.UInt32Value{
-			Value: info.MaxRetries,
-		}
-		result.CircuitBreakers = &cluster.CircuitBreakers{
-			Thresholds: []*cluster.CircuitBreakers_Thresholds{&threshold},
-		}
-	}
+	info.ApplyClusterConfig(result, false)
 	return result
 }
