@@ -120,27 +120,13 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 				VirtualHosts: info.CreateVirtualHosts(node.Id, podCluserName),
 			},
 		},
-		HttpFilters: []*hcm.HttpFilter{
-			info.CreateHttpFaultFilter(),
-			&hcm.HttpFilter{
-				Name: common.RouterHttpFilter,
-			},
-		},
 	}
+	info.ApplyConfig(manager, node.Id == info.node)
 
-	if info.Tracing {
-		if node.Id == info.node {
-			//local inbound tracing
-			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
-				OperationName: hcm.INGRESS,
-			}
-		} else {
-			//headless outbound tracing
-			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
-				OperationName: hcm.EGRESS,
-			}
-		}
-	}
+	manager.HttpFilters = append(manager.HttpFilters, &hcm.HttpFilter{
+		Name: common.RouterHttpFilter,
+	})
+
 	filterConfig, err := types.MarshalAny(manager)
 	if err != nil {
 		return listener.FilterChain{}, err

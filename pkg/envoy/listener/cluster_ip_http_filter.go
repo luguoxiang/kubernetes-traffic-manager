@@ -80,19 +80,12 @@ func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listene
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: routeConfig,
 		},
-		HttpFilters: []*hcm.HttpFilter{
-			info.CreateHttpFaultFilter(),
-			&hcm.HttpFilter{
-				Name: common.RouterHttpFilter,
-			},
-		},
 	}
+	info.ApplyConfig(manager, false)
 
-	if info.Tracing {
-		manager.Tracing = &hcm.HttpConnectionManager_Tracing{
-			OperationName: hcm.EGRESS,
-		}
-	}
+	manager.HttpFilters = append(manager.HttpFilters, &hcm.HttpFilter{
+		Name: common.RouterHttpFilter,
+	})
 
 	filterConfig, err := types.MarshalAny(manager)
 	if err != nil {

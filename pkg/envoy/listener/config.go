@@ -90,7 +90,20 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 	}
 }
 
-func (info *HttpListenerConfigInfo) CreateHttpFaultFilter() *hcm.HttpFilter {
+func (info *HttpListenerConfigInfo) ApplyConfig(manager *hcm.HttpConnectionManager, ingress bool) {
+
+	if info.Tracing {
+		if ingress {
+			//local inbound tracing
+			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
+				OperationName: hcm.INGRESS,
+			}
+		} else {
+			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
+				OperationName: hcm.EGRESS,
+			}
+		}
+	}
 
 	faultConfig := &httpfault.HTTPFault{}
 	changed := false
@@ -129,18 +142,19 @@ func (info *HttpListenerConfigInfo) CreateHttpFaultFilter() *hcm.HttpFilter {
 		}
 		changed = true
 	}
-	if !changed {
-		return nil
-	}
+	if changed {
+		filterConfigStruct, err := types.MarshalAny(faultConfig)
+		if err != nil {
+			glog.Warningf("Failed to MarshalAny HTTPFault: %s", err.Error())
+			panic(err.Error())
+		}
 
-	filterConfigStruct, err := types.MarshalAny(faultConfig)
-	if err != nil {
-		glog.Warningf("Failed to MarshalAny HTTPFault: %s", err.Error())
-		panic(err.Error())
-	}
-	return &hcm.HttpFilter{
-		Name:       common.HttpFaultInjection,
-		ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: filterConfigStruct},
+		manager.HttpFilters = []*hcm.HttpFilter{
+			&hcm.HttpFilter{
+				Name:       common.HttpFaultInjection,
+				ConfigType: &hcm.HttpFilter_TypedConfig{TypedConfig: filterConfigStruct},
+			},
+		}
 	}
 
 }

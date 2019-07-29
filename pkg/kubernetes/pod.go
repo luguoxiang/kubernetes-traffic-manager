@@ -196,8 +196,7 @@ func (manager *K8sResourceManager) UpdatePodAnnotation(podInfo *PodInfo, annotat
 		} else {
 			changed := false
 			for k, v := range annotation {
-				current, ok := rawPod.Annotations[k]
-				if ok && current != v {
+				if rawPod.Annotations[k] != v {
 					rawPod.Annotations[k] = v
 					changed = true
 				}
