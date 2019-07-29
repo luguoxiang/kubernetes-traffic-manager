@@ -2,6 +2,7 @@
  kubernetes-traffic-manager is a traffic manage tools for kubernetes, it implements envoy (https://www.envoyproxy.io/) control plane data api to support:
  * Weighted load balancing
  * Tracing
+ * Fault Injection
  * Circuit breaker
  * Runtime metrics
  
