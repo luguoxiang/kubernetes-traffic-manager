@@ -73,11 +73,6 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Service | traffic.fault.abort.status | 0 | abort with http status |
 | Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
 | Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
-
-# Service configuration labels which requires server side envoy enabled
-
-| Resource | Labels | Default | Description |
-|----------|--------|---------|--------------|
 | Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
 | Service | traffic.retries.max | 0 | max retries number |
 | Service | traffic.connection.max | 0 | max number of connection | 
@@ -90,7 +85,7 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
 | Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
 | Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp)|
-| Service | traffic.tracing.enabled | false | enable tracing for requests to or from pods of this service | 
+| Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
 | Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
 | Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
 
