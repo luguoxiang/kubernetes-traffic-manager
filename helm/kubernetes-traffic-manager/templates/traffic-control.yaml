@@ -17,7 +17,7 @@ spec:
     spec:
       serviceAccountName: "traffic-sa"
       containers:
-      - image: "{{ .Values.images.trafficControl }}"
+      - image: "{{ .Values.images.trafficControl }}:{{ .Chart.Version }}"
         imagePullPolicy: Always
         name: traffic-control
         command:

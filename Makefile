@@ -1,5 +1,7 @@
 .PHONY: build build.images push.images
 
+VERSION=1.0
+
 all: build.images push.images
 
 vendor:
@@ -18,11 +20,11 @@ test: vendor
 	go test -v github.com/luguoxiang/kubernetes-traffic-manager/pkg/...
 
 build.images.envoy: 
-	docker build -t luguoxiang/envoy-manager -f Dockerfile.envoy .
-	docker push luguoxiang/envoy-manager
+	docker build -t luguoxiang/envoy-manager:${VERSION} -f Dockerfile.envoy .
+	docker push luguoxiang/envoy-manager:${VERSION}
 
 build.images.control: 
-	docker build -t luguoxiang/traffic-control -f Dockerfile.control .
-	docker push luguoxiang/traffic-control
+	docker build -t luguoxiang/traffic-control:${VERSION} -f Dockerfile.control .
+	docker push luguoxiang/traffic-control:${VERSION}
 
 build.images: build.images.envoy build.images.control

@@ -16,7 +16,7 @@ spec:
       hostNetwork: true
       containers:
       - name: traffic-envoy-manager
-        image: "{{ .Values.images.envoyManager }}"
+        image: "{{ .Values.images.envoyManager }}:{{ .Chart.Version }}"
         imagePullPolicy: Always
         volumeMounts:
         - name: dockersock

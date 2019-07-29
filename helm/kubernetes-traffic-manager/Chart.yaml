@@ -9,4 +9,4 @@ maintainers:
 sources:
 - https://github.com/luguoxiang/kubernetes-traffic-manager
 name: kubernetes-traffic-manager
-version: 0.1
+version: "1.0"
