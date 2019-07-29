@@ -60,10 +60,14 @@ curl localhost:9090/api/v1/label/__name__/values |jq
 curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_completed |jq
 ```
 
-# Service configuration labels which requires client side envoy enabled
+# Other Configuration Labels
 
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
+| Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
+| Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
+| Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp)|
+| Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
 | Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
 | Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
 | Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
@@ -77,17 +81,10 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Service | traffic.retries.max | 0 | max retries number |
 | Service | traffic.connection.max | 0 | max number of connection | 
 | Service | traffic.request.max-pending | 0 | max pending requests  |
-
-# Other Configuration Labels
-
-| Resource | Labels | Default | Description |
-|----------|--------|---------|--------------|
-| Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
-| Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
-| Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp)|
-| Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
 | Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
 | Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
+
+Note that all the service label configuration requires client pod's envoy enabled.
 
 # Components
 ## envoy-manager
