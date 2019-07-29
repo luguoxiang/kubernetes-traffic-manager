@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	httpfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
@@ -25,12 +26,14 @@ type HttpListenerConfigInfo struct {
 	FaultInjectionAbortStatus     uint32
 
 	RateLimitKbps uint64
+
+	HashCookieName string
+	HashHeaderName string
+	HashCookieTTL  time.Duration
 }
 
 func NeedServiceToPodAnnotation(label string, headless bool) bool {
 	switch label {
-	case "traffic.tracing.enabled":
-		return true
 	case "traffic.request.timeout":
 		fallthrough
 	case "traffic.retries.5xx":
@@ -63,6 +66,12 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 			continue
 		}
 		switch k {
+		case "traffic.hash.cookie.name":
+			info.HashCookieName = v
+		case "traffic.hash.header.name":
+			info.HashHeaderName = v
+		case "traffic.hash.cookie.ttl":
+			info.HashCookieTTL = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
 		case "traffic.tracing.enabled":
 			info.Tracing = kubernetes.GetLabelValueBool(v)
 		case "traffic.request.timeout":
@@ -86,11 +95,47 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 			info.FaultInjectionAbortPercentage = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.rate.limit":
 			info.RateLimitKbps = kubernetes.GetLabelValueUInt64(v)
+		case "":
+
 		}
 	}
 }
+func (info *HttpListenerConfigInfo) ConfigRouteAction(routeAction *route.RouteAction) {
 
-func (info *HttpListenerConfigInfo) ApplyConfig(manager *hcm.HttpConnectionManager, ingress bool) {
+	if info.HashCookieName != "" {
+		cookie := &route.RouteAction_HashPolicy_Cookie{
+			Name: info.HashHeaderName,
+		}
+		if info.HashCookieTTL != 0 {
+			cookie.Ttl = &info.HashCookieTTL
+		}
+		routeAction.HashPolicy = append(routeAction.HashPolicy,
+			&route.RouteAction_HashPolicy{
+				PolicySpecifier: &route.RouteAction_HashPolicy_Cookie_{
+					Cookie: cookie,
+				},
+			})
+	}
+	if info.HashHeaderName != "" {
+		routeAction.HashPolicy = append(routeAction.HashPolicy,
+			&route.RouteAction_HashPolicy{
+				PolicySpecifier: &route.RouteAction_HashPolicy_Header_{
+					Header: &route.RouteAction_HashPolicy_Header{
+						HeaderName: info.HashHeaderName,
+					},
+				},
+			})
+	}
+	if info.RetryOn != "" {
+		routeAction.RetryPolicy = &route.RetryPolicy{
+			RetryOn:    info.RetryOn,
+			NumRetries: &types.UInt32Value{Value: info.RetryTimes}}
+	}
+	if info.RequestTimeout > 0 {
+		routeAction.Timeout = &info.RequestTimeout
+	}
+}
+func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpConnectionManager, ingress bool) {
 
 	if info.Tracing {
 		if ingress {

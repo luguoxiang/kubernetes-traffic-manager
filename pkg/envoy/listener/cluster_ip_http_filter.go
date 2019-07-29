@@ -39,14 +39,7 @@ func (info *HttpClusterIpFilterInfo) CreateVirtualHost() route.VirtualHost {
 			Cluster: info.ClusterName(),
 		},
 	}
-	if info.RetryOn != "" {
-		routeAction.RetryPolicy = &route.RetryPolicy{
-			RetryOn:    info.RetryOn,
-			NumRetries: &types.UInt32Value{Value: info.RetryTimes}}
-	}
-	if info.RequestTimeout > 0 {
-		routeAction.Timeout = &info.RequestTimeout
-	}
+	info.ConfigRouteAction(routeAction)
 
 	return route.VirtualHost{
 		Name:    fmt.Sprintf("%s_vh", info.Name()),
@@ -81,7 +74,7 @@ func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listene
 			RouteConfig: routeConfig,
 		},
 	}
-	info.ApplyConfig(manager, false)
+	info.ConfigConnectionManager(manager, false)
 
 	manager.HttpFilters = append(manager.HttpFilters, &hcm.HttpFilter{
 		Name: common.RouterHttpFilter,

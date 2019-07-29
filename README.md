@@ -60,8 +60,45 @@ curl localhost:9090/api/v1/label/__name__/values |jq
 curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_completed |jq
 ```
 
-# Other Configuration Labels
+# Load Balancing
+```
+ kubectl label svc reviews "traffic.lb.policy=RING_HASH"
+```
+Supported options:
+* ROUND_ROBIN
+* LEAST_REQUEST
+* RING_HASH
+* RANDOM
+* MAGLEV
 
+For ring hash policy, need to set following labels
+* traffic.hash.cookie.name or traffic.hash.header.name (Service)
+* traffic.hash.cookie.ttl (Service, optional)
+* traffic.endpoint.weight (Deployment, optional)
+* traffic.port.(port number)=http (Service)
+
+Reference:
+https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
+https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-routeaction-hash-policy
+
+# Fault Injection
+| Resource | Labels | Default | Description |
+|----------|--------|---------|--------------|
+| Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
+| Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
+| Service | traffic.fault.abort.status | 0 | abort with http status |
+| Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
+| Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
+
+# Circuit Breaker
+| Resource | Labels | Default | Description |
+|----------|--------|---------|--------------|
+| Service | traffic.retries.max | 0 | max retries number |
+| Service | traffic.connection.max | 0 | max number of connection | 
+| Service | traffic.request.max-pending | 0 | max pending requests  |
+| Service | traffic.request.max | 0 | max requests  |
+
+# Other Configuration Labels
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
 | Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
@@ -72,19 +109,12 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
 | Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
 | Service | traffic.retries.gateway-error | 0 | number of retries for gateway error |
-| Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
-| Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
-| Service | traffic.fault.abort.status | 0 | abort with http status |
-| Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
-| Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
 | Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
-| Service | traffic.retries.max | 0 | max retries number |
-| Service | traffic.connection.max | 0 | max number of connection | 
-| Service | traffic.request.max-pending | 0 | max pending requests  |
 | Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
 | Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
 
 Note that all the service label configuration requires client pod's envoy enabled.
+
 
 # Components
 ## envoy-manager

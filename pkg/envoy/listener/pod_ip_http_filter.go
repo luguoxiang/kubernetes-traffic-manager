@@ -52,10 +52,17 @@ func (info *HttpPodIpFilterInfo) String() string {
 
 func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string, podCluserName string) []route.VirtualHost {
 	var virtualHosts []route.VirtualHost
+
 	if nodeId != info.node {
 		//for headless service, should use http Host header to match the target service name so that we can use
 		//cluster ip to route the request.
 		for cluster, domains := range info.Domains {
+			routeAction := &route.RouteAction{
+				ClusterSpecifier: &route.RouteAction_Cluster{
+					Cluster: cluster,
+				},
+			}
+			info.ConfigRouteAction(routeAction)
 			virtualHosts = append(virtualHosts, route.VirtualHost{
 				Name:    fmt.Sprintf("%s_vh", cluster),
 				Domains: domains,
@@ -66,16 +73,18 @@ func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string, podCluserName
 						},
 					},
 					Action: &route.Route_Route{
-						Route: &route.RouteAction{
-							ClusterSpecifier: &route.RouteAction_Cluster{
-								Cluster: cluster,
-							},
-						},
+						Route: routeAction,
 					},
 				}},
 			})
 		}
 	}
+	routeAction := &route.RouteAction{
+		ClusterSpecifier: &route.RouteAction_Cluster{
+			Cluster: podCluserName,
+		},
+	}
+	//ingress cluster does not need config
 	virtualHosts = append(virtualHosts, route.VirtualHost{
 		Name:    fmt.Sprintf("%s_vh", podCluserName),
 		Domains: []string{"*"},
@@ -85,15 +94,13 @@ func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string, podCluserName
 					Prefix: "/",
 				},
 			},
+
 			Action: &route.Route_Route{
-				Route: &route.RouteAction{
-					ClusterSpecifier: &route.RouteAction_Cluster{
-						Cluster: podCluserName,
-					},
-				},
+				Route: routeAction,
 			},
 		}},
 	})
+
 	return virtualHosts
 }
 
@@ -121,7 +128,7 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 			},
 		},
 	}
-	info.ApplyConfig(manager, node.Id == info.node)
+	info.ConfigConnectionManager(manager, node.Id == info.node)
 
 	manager.HttpFilters = append(manager.HttpFilters, &hcm.HttpFilter{
 		Name: common.RouterHttpFilter,
