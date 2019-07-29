@@ -31,7 +31,7 @@ func (pod *PodInfo) NodeId() string {
 }
 
 func (pod *PodInfo) Weight() uint32 {
-	value := pod.Annotations[ENDPOINT_WEIGHT]
+	value := pod.Annotations[ENDPOINT_WEIGHT_BY_DEPLOYMENT]
 	if value != "" {
 		result := GetLabelValueUInt32(value)
 		if result > 128 {
@@ -197,7 +197,7 @@ func NewPodInfo(pod *v1.Pod) *PodInfo {
 	}
 }
 
-func (manager *K8sResourceManager) UpdatePodAnnotation(podInfo *PodInfo, annotation map[string]*string) error {
+func (manager *K8sResourceManager) UpdatePodAnnotation(podInfo *PodInfo, annotation map[string]string) error {
 	var err error
 	var rawPod *v1.Pod
 	for i := 0; i < 3; i++ {
@@ -205,18 +205,46 @@ func (manager *K8sResourceManager) UpdatePodAnnotation(podInfo *PodInfo, annotat
 		if err != nil {
 			return err
 		}
+		if rawPod.Annotations == nil {
+			rawPod.Annotations = annotation
+		} else {
+			changed := false
+			for k, v := range annotation {
+				current, ok := rawPod.Annotations[k]
+				if ok && current != v {
+					rawPod.Annotations[k] = v
+					changed = true
+				}
+			}
+			if !changed {
+				return nil
+			}
+		}
+		_, err = manager.clientSet.CoreV1().Pods(podInfo.Namespace()).Update(rawPod)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return err
+}
+
+func (manager *K8sResourceManager) RemovePodAnnotation(podInfo *PodInfo, annotationkeys []string) error {
+	var err error
+	var rawPod *v1.Pod
+	for i := 0; i < 3; i++ {
+		rawPod, err = manager.clientSet.CoreV1().Pods(podInfo.Namespace()).Get(podInfo.Name(), metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if rawPod.Annotations == nil {
+			return nil
+		}
 		changed := false
-		for k, v := range annotation {
-			if v != nil && rawPod.Annotations == nil {
-				rawPod.Annotations = make(map[string]string)
-			}
-			current, ok := rawPod.Annotations[k]
-			if v == nil && ok {
-				delete(rawPod.Annotations, k)
-				changed = true
-			}
-			if v != nil && current != *v {
-				rawPod.Annotations[k] = *v
+		for _, key := range annotationkeys {
+			_, ok := rawPod.Annotations[key]
+			if ok {
+				delete(rawPod.Annotations, key)
 				changed = true
 			}
 		}

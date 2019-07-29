@@ -59,8 +59,8 @@ func (manager *EnvoyManager) checkEnvoyProxy(dockerId string, podInfo *kubernete
 	if !annotate {
 		return true
 	}
-	err := manager.k8sManager.UpdatePodAnnotation(podInfo, map[string]*string{
-		kubernetes.ENVOY_PROXY_ANNOTATION: &dockerId,
+	err := manager.k8sManager.UpdatePodAnnotation(podInfo, map[string]string{
+		kubernetes.ENVOY_PROXY_ANNOTATION: dockerId,
 	})
 
 	if err != nil {

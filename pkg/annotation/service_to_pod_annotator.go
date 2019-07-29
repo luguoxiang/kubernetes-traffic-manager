@@ -1,14 +1,14 @@
 package annotation
 
 import (
+	"fmt"
 	"github.com/golang/glog"
 	envoy "github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
+	"strings"
 )
 
 var (
-	TRUE_STR  = "true"
-	FALSE_STR = "false"
 
 	//annotations also need to be applied on headless service pods
 	HeadlessServiceAnnotations = []string{
@@ -49,34 +49,32 @@ func (pa *ServiceToPodAnnotator) PodValid(pod *kubernetes.PodInfo) bool {
 }
 
 func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
-	annotations := map[string]*string{
-		kubernetes.PodHeadlessByService(svc.Name()): nil,
-	}
-	for _, key := range HeadlessServiceAnnotations {
-		if svc.Labels[key] != "" {
-			podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
-			annotations[podKey] = nil
+	var annotationKeys []string
+	for key, _ := range pod.Annotations {
+		if strings.HasPrefix(key, fmt.Sprintf("%s%s.", kubernetes.POD_SERVICE_PREFIX, svc.Name())) {
+			annotationKeys = append(annotationKeys, key)
 		}
 	}
-	for _, port := range svc.Ports {
-		key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
-		annotations[key] = nil
+
+	if len(annotationKeys) == 0 {
+		return
 	}
-	err := pa.k8sManager.UpdatePodAnnotation(pod, annotations)
+
+	err := pa.k8sManager.RemovePodAnnotation(pod, annotationKeys)
 	if err != nil {
-		glog.Infof("Annotate pod %s with %v failed: %s", pod.Name(), annotations, err.Error())
+		glog.Errorf("Remove Pod %s Annotations %v failed: %s", pod.Name(), annotationKeys, err.Error())
 	}
 }
 
 func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
-	annotations := map[string]*string{}
+	annotations := make(map[string]string)
 
 	for _, port := range svc.Ports {
 		svc_key := kubernetes.ServicePortProtocol(port.Port)
 		protocol := svc.Labels[svc_key]
 		if protocol != "" {
 			key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
-			annotations[key] = &protocol
+			annotations[key] = protocol
 		}
 
 	}
@@ -85,19 +83,19 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 		if svc.Labels[key] != "" {
 			headlessValue := svc.Labels[key]
 			podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
-			annotations[podKey] = &headlessValue
+			annotations[podKey] = headlessValue
 		}
 	}
 
 	if svc.ClusterIP == "None" {
 		key := kubernetes.PodHeadlessByService(svc.Name())
-		annotations[key] = &TRUE_STR
+		annotations[key] = "true"
 
 		for _, key := range HeadlessServiceAnnotations {
 			if svc.Labels[key] != "" {
 				headlessValue := svc.Labels[key]
 				podKey := kubernetes.PodKeyByService(svc.Name(), key[len("traffic."):])
-				annotations[podKey] = &headlessValue
+				annotations[podKey] = headlessValue
 			}
 		}
 	}

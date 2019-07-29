@@ -3,6 +3,7 @@ package annotation
 import (
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
+	"strings"
 )
 
 type DeploymentToPodAnnotator struct {
@@ -20,28 +21,35 @@ func (annotator *DeploymentToPodAnnotator) PodValid(pod *kubernetes.PodInfo) boo
 }
 
 func (annotator *DeploymentToPodAnnotator) removeDeploymentAnnotateToPod(pod *kubernetes.PodInfo, deployment *kubernetes.DeploymentInfo) {
-	annotations := map[string]*string{
-		kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT: nil,
-		kubernetes.ENDPOINT_WEIGHT:             nil,
+	var annotationKeys []string
+	for key, _ := range pod.Annotations {
+		if strings.HasPrefix(key, kubernetes.POD_DEPLOYMENT_PREFIX) {
+			annotationKeys = append(annotationKeys, key)
+		}
 	}
-	err := annotator.k8sManager.UpdatePodAnnotation(pod, annotations)
+
+	if len(annotationKeys) == 0 {
+		return
+	}
+
+	err := annotator.k8sManager.RemovePodAnnotation(pod, annotationKeys)
 	if err != nil {
-		glog.Infof("Annotate pod %s with %v failed: %s", pod.Name(), annotations, err.Error())
+		glog.Errorf("Remove Pod %s Annotations %v failed: %s", pod.Name(), annotationKeys, err.Error())
 	}
 }
 
 func (annotator *DeploymentToPodAnnotator) addDeploymentAnnotateToPod(pod *kubernetes.PodInfo, deployment *kubernetes.DeploymentInfo) {
-	annotations := map[string]*string{}
+	annotations := make(map[string]string)
 
 	//propagate deployment labels to pod
-	value1 := deployment.Labels[kubernetes.ENDPOINT_WEIGHT]
-	if value1 != "" {
-		annotations[kubernetes.ENDPOINT_WEIGHT] = &value1
+	value := deployment.Labels[kubernetes.ENDPOINT_WEIGHT]
+	if value != "" {
+		annotations[kubernetes.ENDPOINT_WEIGHT_BY_DEPLOYMENT] = value
 	}
 
-	value2 := deployment.Labels[kubernetes.ENVOY_ENABLED]
-	if value2 != "" {
-		annotations[kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT] = &value2
+	value = deployment.Labels[kubernetes.ENVOY_ENABLED]
+	if value != "" {
+		annotations[kubernetes.ENVOY_ENABLED_BY_DEPLOYMENT] = value
 	}
 
 	if len(annotations) == 0 {

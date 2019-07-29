@@ -14,15 +14,18 @@ const (
 	DEPLOYMENT_TYPE ResourceType = 2
 	POD_TYPE        ResourceType = 3
 
-	ENVOY_ENABLED               = "traffic.envoy.enabled"
-	ENVOY_ENABLED_BY_DEPLOYMENT = "traffic.envoy.deployment.enabled"
-	ENVOY_PROXY_ANNOTATION      = "traffic.envoy.proxy"
-	LOCAL_ACCESS_POD_IP         = "traffic.envoy.local.use_podip"
-	ENDPOINT_WEIGHT             = "traffic.endpoint.weight"
-	DEFAULT_WEIGHT              = 100
+	ENVOY_ENABLED                 = "traffic.envoy.enabled"
+	ENDPOINT_WEIGHT               = "traffic.endpoint.weight"
+	ENDPOINT_WEIGHT_BY_DEPLOYMENT = "traffic.deployment.endpoint.weight"
+	ENVOY_ENABLED_BY_DEPLOYMENT   = "traffic.deployment.envoy.enabled"
+	ENVOY_PROXY_ANNOTATION        = "traffic.envoy.proxy"
+	LOCAL_ACCESS_POD_IP           = "traffic.envoy.local.use_podip"
 
-	POD_SERVICE_PREFIX = "traffic.svc."
-	HEADLESS           = "traffic.headless"
+	DEFAULT_WEIGHT = 100
+
+	POD_SERVICE_PREFIX    = "traffic.svc."
+	POD_DEPLOYMENT_PREFIX = "traffic.deployment."
+	HEADLESS              = "traffic.headless"
 )
 
 func GetLabelValueUInt32(value string) uint32 {
