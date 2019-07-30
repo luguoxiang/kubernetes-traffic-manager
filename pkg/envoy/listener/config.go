@@ -52,6 +52,8 @@ func NeedServiceToPodAnnotation(label string, headless bool) bool {
 		fallthrough
 	case "traffic.rate.limit":
 		return headless
+	case "traffic.tracing.enabled":
+		return true
 	default:
 		return false
 	}

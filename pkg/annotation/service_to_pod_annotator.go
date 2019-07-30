@@ -8,27 +8,6 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
-var (
-
-	//annotations need to be applied on headless service pods
-	HeadlessServiceAnnotations = []string{
-		"traffic.connection.timeout",
-		"traffic.retries.max",
-		"traffic.connection.max",
-		"traffic.request.max-pending",
-
-		"traffic.request.timeout",
-		"traffic.retries.5xx",
-		"traffic.retries.connect-failure",
-		"traffic.retries.gateway-error",
-		"traffic.fault.delay.time",
-		"traffic.fault.delay.percentage",
-		"traffic.fault.abort.status",
-		"traffic.fault.abort.percentage",
-		"traffic.rate.limit",
-	}
-)
-
 type ServiceToPodAnnotator struct {
 	k8sManager *kubernetes.K8sResourceManager
 }
@@ -63,6 +42,14 @@ func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.Po
 
 func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
 	annotations := make(map[string]string)
+
+	for key, _ := range pod.Annotations {
+		if kubernetes.AnnotationHasServiceLabel(svc.Name(), key) {
+			//ensure non-exists service annotation being removed
+			//existing service annotation will be overided later
+			annotations[key] = ""
+		}
+	}
 
 	for _, port := range svc.Ports {
 		svc_key := kubernetes.ServicePortProtocol(port.Port)

@@ -115,7 +115,7 @@ func (pod *PodInfo) GetPortConfig() map[uint32]PodPortInfo {
 			}
 			oldInfo := result[port]
 			if oldInfo.ConfigMap != nil {
-				glog.Warningf("port %d belongs to more than one services, use %s's config", service)
+				glog.Warningf("port %d belongs to more than one services, use %s's config", port, service)
 			}
 			result[port] = podPortInfo
 		}
@@ -187,7 +187,7 @@ func (manager *K8sResourceManager) UpdatePodAnnotation(podInfo *PodInfo, annotat
 	var err error
 	var rawPod *v1.Pod
 	for i := 0; i < 3; i++ {
-		rawPod, err = manager.clientSet.CoreV1().Pods(podInfo.Namespace()).Get(podInfo.Name(), metav1.GetOptions{})
+		rawPod, err = manager.ClientSet.CoreV1().Pods(podInfo.Namespace()).Get(podInfo.Name(), metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -205,7 +205,7 @@ func (manager *K8sResourceManager) UpdatePodAnnotation(podInfo *PodInfo, annotat
 				return nil
 			}
 		}
-		_, err = manager.clientSet.CoreV1().Pods(podInfo.Namespace()).Update(rawPod)
+		_, err = manager.ClientSet.CoreV1().Pods(podInfo.Namespace()).Update(rawPod)
 		if err == nil {
 			return nil
 		}
@@ -218,7 +218,7 @@ func (manager *K8sResourceManager) RemovePodAnnotation(podInfo *PodInfo, annotat
 	var err error
 	var rawPod *v1.Pod
 	for i := 0; i < 3; i++ {
-		rawPod, err = manager.clientSet.CoreV1().Pods(podInfo.Namespace()).Get(podInfo.Name(), metav1.GetOptions{})
+		rawPod, err = manager.ClientSet.CoreV1().Pods(podInfo.Namespace()).Get(podInfo.Name(), metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -236,7 +236,7 @@ func (manager *K8sResourceManager) RemovePodAnnotation(podInfo *PodInfo, annotat
 		if !changed {
 			return nil
 		}
-		_, err = manager.clientSet.CoreV1().Pods(podInfo.Namespace()).Update(rawPod)
+		_, err = manager.ClientSet.CoreV1().Pods(podInfo.Namespace()).Update(rawPod)
 		if err == nil {
 			return nil
 		}

@@ -108,7 +108,7 @@ func (manager *K8sResourceManager) AddServiceLabel(serviceInfo *ServiceInfo, key
 	var err error
 	var rawService *v1.Service
 	for i := 0; i < 3; i++ {
-		rawService, err = manager.clientSet.CoreV1().Services(serviceInfo.Namespace()).Get(serviceInfo.Name(), metav1.GetOptions{})
+		rawService, err = manager.ClientSet.CoreV1().Services(serviceInfo.Namespace()).Get(serviceInfo.Name(), metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func (manager *K8sResourceManager) AddServiceLabel(serviceInfo *ServiceInfo, key
 		}
 		rawService.Labels[key] = value
 
-		_, err = manager.clientSet.CoreV1().Services(serviceInfo.Namespace()).Update(rawService)
+		_, err = manager.ClientSet.CoreV1().Services(serviceInfo.Namespace()).Update(rawService)
 		if err == nil {
 			return nil
 		}

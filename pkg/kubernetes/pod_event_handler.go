@@ -1,9 +1,8 @@
 package kubernetes
 
 import (
+	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
-
 	"k8s.io/client-go/tools/cache"
 	"reflect"
 	"time"
@@ -34,11 +33,8 @@ func (manager *K8sResourceManager) PodUpdated(oldPod, newPod *PodInfo) {
 }
 
 func (manager *K8sResourceManager) WatchPods(stopper chan struct{}, handlers ...PodEventHandler) {
-	watchlist := cache.NewListWatchFromClient(
-		manager.clientSet.Core().RESTClient(), "pods", "",
-		fields.Everything())
 	_, controller := cache.NewInformer(
-		watchlist,
+		manager.watchListMap["pods"],
 		&v1.Pod{},
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
@@ -47,6 +43,7 @@ func (manager *K8sResourceManager) WatchPods(stopper chan struct{}, handlers ...
 				if pod == nil {
 					return
 				}
+
 				manager.Lock()
 				defer manager.Unlock()
 
@@ -102,5 +99,8 @@ func (manager *K8sResourceManager) WatchPods(stopper chan struct{}, handlers ...
 			},
 		},
 	)
+	glog.Info("Start watching pods")
 	controller.Run(stopper)
+	glog.Info("WatchPods terminated")
+
 }

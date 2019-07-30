@@ -62,6 +62,7 @@ func main() {
 	discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, ads)
 
 	stopper := make(chan struct{})
+	defer close(stopper)
 	go k8sManager.WatchPods(stopper, k8sManager, eds, cds, lds, deploymentToPodAnnotator, serviceToPodAnnotator)
 	go k8sManager.WatchServices(stopper, k8sManager, cds, lds, serviceToPodAnnotator)
 	go k8sManager.WatchDeployments(stopper, k8sManager, deploymentToPodAnnotator)

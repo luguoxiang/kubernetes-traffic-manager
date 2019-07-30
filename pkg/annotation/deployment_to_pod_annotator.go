@@ -41,12 +41,16 @@ func (annotator *DeploymentToPodAnnotator) removeDeploymentAnnotateToPod(pod *ku
 func (annotator *DeploymentToPodAnnotator) addDeploymentAnnotateToPod(pod *kubernetes.PodInfo, deployment *kubernetes.DeploymentInfo) {
 	annotations := make(map[string]string)
 
-	//propagate deployment labels to pod
-
-	for key, value := range deployment.Labels {
-		if value == "" {
-			continue
+	for key, _ := range pod.Annotations {
+		if kubernetes.AnnotationHasDeploymentLabel(key) {
+			//ensure non-exists deployment annotation being removed
+			//existings annotations will be override later
+			annotations[key] = ""
 		}
+	}
+
+	//propagate deployment labels to pod
+	for key, value := range deployment.Labels {
 		if endpoint.NeedDeploymentToPodAnnotation(key) {
 			podKey := kubernetes.DeploymentLabelToPodAnnotation(key)
 			annotations[podKey] = value
@@ -65,9 +69,7 @@ func (annotator *DeploymentToPodAnnotator) addDeploymentAnnotateToPod(pod *kuber
 func (annotator *DeploymentToPodAnnotator) PodAdded(pod *kubernetes.PodInfo) {
 	for _, resource := range annotator.k8sManager.GetMatchedResources(pod, kubernetes.DEPLOYMENT_TYPE) {
 		deployment := resource.(*kubernetes.DeploymentInfo)
-		if pod.EnvoyEnabled() || deployment.EnvoyEnabled() {
-			annotator.addDeploymentAnnotateToPod(pod, deployment)
-		}
+		annotator.addDeploymentAnnotateToPod(pod, deployment)
 	}
 }
 
@@ -84,9 +86,7 @@ func (annotator *DeploymentToPodAnnotator) DeploymentValid(deployment *kubernete
 func (annotator *DeploymentToPodAnnotator) DeploymentAdded(deployment *kubernetes.DeploymentInfo) {
 	for _, resource := range annotator.k8sManager.GetMatchedResources(deployment, kubernetes.POD_TYPE) {
 		pod := resource.(*kubernetes.PodInfo)
-		if pod.EnvoyEnabled() || deployment.EnvoyEnabled() {
-			annotator.addDeploymentAnnotateToPod(pod, deployment)
-		}
+		annotator.addDeploymentAnnotateToPod(pod, deployment)
 	}
 }
 func (annotator *DeploymentToPodAnnotator) DeploymentDeleted(deployment *kubernetes.DeploymentInfo) {

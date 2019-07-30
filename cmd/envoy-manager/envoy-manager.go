@@ -13,6 +13,7 @@ func main() {
 		panic(err.Error())
 	}
 	stopper := make(chan struct{})
+	defer close(stopper)
 
 	envoyManager, err := docker.NewEnvoyManager(k8sManager)
 	if err != nil {

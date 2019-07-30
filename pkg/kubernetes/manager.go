@@ -10,15 +10,20 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/tools/cache"
 )
 
 type ResourcesOnLabel map[ResourceType][]ResourceInfoPointer
 
 type K8sResourceManager struct {
 	labelTypeResourceMap map[string]ResourcesOnLabel
-	clientSet            kubernetes.Interface
+	ClientSet            kubernetes.Interface
 	mutex                *sync.RWMutex
 	locked               int32
+
+	watchListMap map[string]cache.ListerWatcher
 }
 
 func NewK8sResourceManager() (*K8sResourceManager, error) {
@@ -29,12 +34,18 @@ func NewK8sResourceManager() (*K8sResourceManager, error) {
 	}
 
 	result := &K8sResourceManager{
-		clientSet: clientSet,
+		ClientSet: clientSet,
 
-		mutex: &sync.RWMutex{},
+		mutex:                &sync.RWMutex{},
+		labelTypeResourceMap: make(map[string]ResourcesOnLabel),
+		watchListMap:         make(map[string]cache.ListerWatcher),
 	}
 
-	result.labelTypeResourceMap = make(map[string]ResourcesOnLabel)
+	for _, resourceType := range []string{"pods", "services", "deployments", "statefulsets", "daemonsets"} {
+		result.watchListMap[resourceType] = cache.NewListWatchFromClient(
+			clientSet.Core().RESTClient(), resourceType, "", fields.Everything())
+	}
+
 	return result, nil
 }
 func (manager *K8sResourceManager) NewCond() *sync.Cond {
@@ -74,7 +85,7 @@ func getK8sClientSet() (kubernetes.Interface, error) {
 }
 
 func (manager *K8sResourceManager) PodExists(name string, ns string) (bool, error) {
-	_, err := manager.clientSet.CoreV1().Pods(ns).Get(name, metav1.GetOptions{})
+	_, err := manager.ClientSet.CoreV1().Pods(ns).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return false, nil

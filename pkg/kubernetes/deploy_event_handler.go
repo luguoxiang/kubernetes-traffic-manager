@@ -1,13 +1,13 @@
 package kubernetes
 
 import (
-	"k8s.io/apimachinery/pkg/fields"
+	"github.com/golang/glog"
+	apps_v1beta1 "k8s.io/api/apps/v1beta1"
+	v1beta1 "k8s.io/api/extensions/v1beta1"
+
 	"k8s.io/client-go/tools/cache"
 	"reflect"
 	"time"
-
-	apps_v1beta1 "k8s.io/api/apps/v1beta1"
-	v1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
 type DeploymentEventHandler interface {
@@ -83,41 +83,39 @@ func (manager *K8sResourceManager) getDeploymentEventHandler(handlers []Deployme
 	}
 
 }
+
 func (manager *K8sResourceManager) WatchDeployments(stopper chan struct{}, handlers ...DeploymentEventHandler) {
-	watchlist := cache.NewListWatchFromClient(
-		manager.clientSet.ExtensionsV1beta1().RESTClient(), "deployments", "",
-		fields.Everything())
 	_, controller := cache.NewInformer(
-		watchlist,
+		manager.watchListMap["deployments"],
 		&v1beta1.Deployment{},
 		time.Second*0,
 		manager.getDeploymentEventHandler(handlers),
 	)
+	glog.Info("Start watching deployments")
 	controller.Run(stopper)
+	glog.Info("WatchDeployments terminated")
 }
 
 func (manager *K8sResourceManager) WatchStatefulSets(stopper chan struct{}, handlers ...DeploymentEventHandler) {
-	watchlist := cache.NewListWatchFromClient(
-		manager.clientSet.AppsV1beta1().RESTClient(), "statefulsets", "",
-		fields.Everything())
 	_, controller := cache.NewInformer(
-		watchlist,
+		manager.watchListMap["statefulsets"],
 		&apps_v1beta1.StatefulSet{},
 		time.Second*0,
 		manager.getDeploymentEventHandler(handlers),
 	)
+	glog.Info("Start watching statefulSets")
 	controller.Run(stopper)
+	glog.Info("WatchStatefulSets terminated")
 }
 
 func (manager *K8sResourceManager) WatchDaemonSets(stopper chan struct{}, handlers ...DeploymentEventHandler) {
-	watchlist := cache.NewListWatchFromClient(
-		manager.clientSet.ExtensionsV1beta1().RESTClient(), "daemonsets", "",
-		fields.Everything())
 	_, controller := cache.NewInformer(
-		watchlist,
+		manager.watchListMap["daemonsets"],
 		&v1beta1.DaemonSet{},
 		time.Second*0,
 		manager.getDeploymentEventHandler(handlers),
 	)
+	glog.Info("Start watching daemonSets")
 	controller.Run(stopper)
+	glog.Info("WatchDaemonSets terminated")
 }
