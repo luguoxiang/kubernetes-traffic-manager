@@ -63,20 +63,27 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 
 # Load Balancing
 ```
- kubectl label svc reviews "traffic.lb.policy=RING_HASH"
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
+kubectl label svc reviews traffic.port.9080=http
+kubectl label svc reviews traffic.lb.policy=RING_HASH
+kubectl label svc reviews traffic.hash.cookie.name="mycookie"
+kubectl label svc reviews traffic.hash.cookie.ttl="100000"
+
+kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
+
+kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v http://reviews:9080/reviews/0
+# The http response should contains set-cookie, for example:
+# set-cookie: mycookie="3acd918773ba09c5"; Max-Age=100; HttpOnly
+
+#following request should always send to same review pod, it should always contains or alwayes do not contains "rating"
+kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v -H "Cookie: mycookie=3acd918773ba09c5" http://reviews:9080/reviews/0
 ```
-Supported options:
+Supported traffic.lb.policy options:
 * ROUND_ROBIN
 * LEAST_REQUEST
 * RING_HASH
 * RANDOM
 * MAGLEV
-
-For ring hash policy, need to set following labels
-* traffic.hash.cookie.name or traffic.hash.header.name (Service)
-* traffic.hash.cookie.ttl (Service, optional)
-* traffic.endpoint.weight (Deployment, optional)
-* traffic.port.(port number)=http (Service)
 
 Reference:
 * https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
