@@ -31,9 +31,10 @@ func TestServiceTracingToPod(t *testing.T) {
 
 	var service corev1.Service
 	service.Namespace = "test-ns"
-	service.Labels = map[string]string{"traffic.tracing.enabled": "true", "traffic.rate.limit": "100"}
+	service.Labels = map[string]string{"traffic.port.8080": "http", "traffic.tracing.enabled": "true", "traffic.rate.limit": "100"}
 	service.Spec.Selector = map[string]string{"c": "d"}
 	service.Name = "Service1"
+	service.Spec.Ports = []corev1.ServicePort{{Name: "test", Port: 8080}}
 	serviceWatchlist.Add(&service)
 
 	time.Sleep(time.Second)
@@ -43,6 +44,7 @@ func TestServiceTracingToPod(t *testing.T) {
 	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.headless"], "")
 	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.rate.limit"], "")
 	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.tracing.enabled"], "true")
+	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.port.8080"], "http")
 }
 
 func TestServiceHeadlessToPod(t *testing.T) {

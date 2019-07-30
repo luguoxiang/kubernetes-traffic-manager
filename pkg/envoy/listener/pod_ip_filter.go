@@ -42,7 +42,7 @@ func (info *PodIpFilterInfo) Type() string {
 }
 
 func (info *PodIpFilterInfo) Name() string {
-	return fmt.Sprintf("%d|%s.static", info.port, strings.Replace(info.node, ".", "_", -1))
+	return fmt.Sprintf("%d|%s.static", info.port, strings.Replace(info.node, ".", "|", -1))
 }
 
 func (info *PodIpFilterInfo) getClusterName(nodeId string) string {

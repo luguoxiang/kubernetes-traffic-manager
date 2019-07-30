@@ -104,7 +104,7 @@ Reference:
 |----------|--------|---------|--------------|
 | Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
 | Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
-| Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp)|
+| Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
 | Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
 | Service | traffic.tracing.sampling | 100| percentage of tracing sampling |
 | Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |

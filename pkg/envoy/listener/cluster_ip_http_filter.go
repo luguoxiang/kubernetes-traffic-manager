@@ -30,7 +30,7 @@ func NewHttpClusterIpFilterInfo(svc *kubernetes.ServiceInfo, port uint32) *HttpC
 }
 
 func (info *HttpClusterIpFilterInfo) String() string {
-	return fmt.Sprintf("%s, %s,tracing=%v", info.Name(), info.clusterIP, info.Tracing)
+	return fmt.Sprintf("%s,%s,tracing=%v", info.Name(), info.clusterIP, info.Tracing)
 }
 
 func (info *HttpClusterIpFilterInfo) CreateVirtualHost() route.VirtualHost {
