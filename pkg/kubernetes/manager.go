@@ -41,11 +41,23 @@ func NewK8sResourceManager() (*K8sResourceManager, error) {
 		watchListMap:         make(map[string]cache.ListerWatcher),
 	}
 
-	for _, resourceType := range []string{"pods", "services", "deployments", "statefulsets", "daemonsets"} {
-		result.watchListMap[resourceType] = cache.NewListWatchFromClient(
-			clientSet.Core().RESTClient(), resourceType, "", fields.Everything())
-	}
+	result.watchListMap["pods"] = cache.NewListWatchFromClient(
+		clientSet.Core().RESTClient(), "pods", "", fields.Everything())
 
+	result.watchListMap["services"] = cache.NewListWatchFromClient(
+		clientSet.Core().RESTClient(), "services", "", fields.Everything())
+
+	result.watchListMap["deployments"] = cache.NewListWatchFromClient(
+		clientSet.ExtensionsV1beta1().RESTClient(), "deployments", "",
+		fields.Everything())
+
+	result.watchListMap["statefulsets"] = cache.NewListWatchFromClient(
+		clientSet.AppsV1beta1().RESTClient(), "statefulsets", "",
+		fields.Everything())
+
+	result.watchListMap["daemonsets"] = cache.NewListWatchFromClient(
+		clientSet.ExtensionsV1beta1().RESTClient(), "daemonsets", "",
+		fields.Everything())
 	return result, nil
 }
 func (manager *K8sResourceManager) NewCond() *sync.Cond {
