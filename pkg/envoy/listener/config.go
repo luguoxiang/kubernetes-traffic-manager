@@ -25,7 +25,8 @@ type HttpListenerConfigInfo struct {
 	FaultInjectionAbortPercentage uint32
 	FaultInjectionAbortStatus     uint32
 
-	RateLimitKbps uint64
+	RateLimitKbps        uint64
+	TraceSamplingPercent uint32
 
 	HashCookieName string
 	HashHeaderName string
@@ -54,6 +55,8 @@ func NeedServiceToPodAnnotation(label string, headless bool) bool {
 		return headless
 	case "traffic.tracing.enabled":
 		return true
+	case "traffic.tracing.sampling":
+		return true
 	default:
 		return false
 	}
@@ -62,7 +65,7 @@ func NeedServiceToPodAnnotation(label string, headless bool) bool {
 func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 	info.FaultInjectionAbortStatus = 503
 	info.FaultInjectionFixDelay = time.Second
-
+	info.TraceSamplingPercent = 100
 	for k, v := range config {
 		if v == "" {
 			continue
@@ -74,8 +77,12 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 			info.HashHeaderName = v
 		case "traffic.hash.cookie.ttl":
 			info.HashCookieTTL = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
+
 		case "traffic.tracing.enabled":
 			info.Tracing = kubernetes.GetLabelValueBool(v)
+		case "traffic.tracing.sampling":
+			info.TraceSamplingPercent = kubernetes.GetLabelValueUInt32(v)
+
 		case "traffic.request.timeout":
 			info.RequestTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
 		case "traffic.retries.5xx":
@@ -97,7 +104,6 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 			info.FaultInjectionAbortPercentage = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.rate.limit":
 			info.RateLimitKbps = kubernetes.GetLabelValueUInt64(v)
-		case "":
 
 		}
 	}
@@ -149,6 +155,9 @@ func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpCon
 			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
 				OperationName: hcm.EGRESS,
 			}
+		}
+		manager.Tracing.OverallSampling = &_type.Percent{
+			Value: float64(info.TraceSamplingPercent),
 		}
 	}
 	//headless service will use pod ip egress filter's config, ingress side do not need config
