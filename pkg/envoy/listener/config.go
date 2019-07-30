@@ -112,7 +112,7 @@ func (info *HttpListenerConfigInfo) ConfigRouteAction(routeAction *route.RouteAc
 
 	if info.HashCookieName != "" {
 		cookie := &route.RouteAction_HashPolicy_Cookie{
-			Name: info.HashHeaderName,
+			Name: info.HashCookieName,
 		}
 		if info.HashCookieTTL != 0 {
 			cookie.Ttl = &info.HashCookieTTL
