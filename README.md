@@ -75,7 +75,7 @@ kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v http://reviews:9080/revi
 # The http response should contains set-cookie, for example:
 # set-cookie: mycookie="3acd918773ba09c5"; Max-Age=100; HttpOnly
 
-#following request should always send to same review pod, it should always contains or alwayes do not contains "rating"
+#following request should always send to same review pod, it should always contain "ratings" or always be without "ratings"
 kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v -H "Cookie: mycookie=3acd918773ba09c5" http://reviews:9080/reviews/0
 ```
 Supported traffic.lb.policy options:
