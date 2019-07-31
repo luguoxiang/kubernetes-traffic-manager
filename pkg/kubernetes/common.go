@@ -53,6 +53,17 @@ func GetLabelValueBool(value string) bool {
 	return strings.EqualFold(value, "true")
 }
 
+func GetLabelValueFloat64(value string) float64 {
+	if value == "" {
+		return 0
+	}
+	i, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0
+	}
+	return i
+}
+
 func GetLabelValueInt64(value string) int64 {
 	if value == "" {
 		return 0

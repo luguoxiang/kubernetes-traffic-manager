@@ -26,7 +26,7 @@ type HttpListenerConfigInfo struct {
 	FaultInjectionAbortStatus     uint32
 
 	RateLimitKbps        uint64
-	TraceSamplingPercent uint32
+	TraceSamplingPercent float64
 
 	HashCookieName string
 	HashHeaderName string
@@ -81,7 +81,7 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 		case "traffic.tracing.enabled":
 			info.Tracing = kubernetes.GetLabelValueBool(v)
 		case "traffic.tracing.sampling":
-			info.TraceSamplingPercent = kubernetes.GetLabelValueUInt32(v)
+			info.TraceSamplingPercent = kubernetes.GetLabelValueFloat64(v)
 
 		case "traffic.request.timeout":
 			info.RequestTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
@@ -157,7 +157,7 @@ func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpCon
 			}
 		}
 		manager.Tracing.OverallSampling = &_type.Percent{
-			Value: float64(info.TraceSamplingPercent),
+			Value: info.TraceSamplingPercent,
 		}
 	}
 	//headless service will use pod ip egress filter's config, ingress side do not need config

@@ -101,7 +101,7 @@ kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.0/samp
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
 | Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
-| Service | traffic.tracing.sampling | 100| percentage of tracing sampling |
+| Service | traffic.tracing.sampling | 100 | percentage of tracing sampling (float) |
 
 ```
 kubectl label deployment traffic-zipkin traffic.envoy.enabled=false --overwrite
