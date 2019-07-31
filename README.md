@@ -12,7 +12,7 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 ```
 
 # Required labels
-   When user label a deployment with "traffic.envoy.enabled=true", the deployment pods' traffic will be managed.
+   When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
    
    By default, all envoy enabled pods' incoming and outcoming traffic will be blocked. 
    You need to add traffic.port.(port number)=(protocol) labels to unblock traffic on certain port.
