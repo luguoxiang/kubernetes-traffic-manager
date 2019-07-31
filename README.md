@@ -122,6 +122,7 @@ kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl -v http://productpage:9080:
 # show traceId, number of returned traceId should be around 5
 kubectl exec traffic-zipkin-694c7884d5-x4pn9 curl http://localhost:9411/api/v2/traces?limit=100 | python3 -c "import sys, json; print([x[0]['traceId'] for x in json.load(sys.stdin)])"
 ```
+Like Istio, Applications need to propagate appropriate HTTP headers, reference: https://istio.io/docs/tasks/telemetry/distributed-tracing/overview/
 
 ## Check running envoy proxy instances on each node
 
