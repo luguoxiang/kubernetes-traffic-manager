@@ -24,6 +24,12 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
    ```
    
 # Load Balancing
+| Resource | Labels | Default | Description |
+|----------|--------|---------|--------------|
+| Service | traffic.lb.policy | ROUND_ROBIN | load balance policy: ROUND_ROBIN, LEAST_REQUEST, RING_HASH, RANDOM, MAGLEV | 
+| Service | traffic.hash.cookie.name | "" | cookie hash policy |
+| Service | traffic.hash.cookie.ttl | 0 | generate cookie with ttl |
+| Service | traffic.hash.header.name | "" | http header name for hash policy |
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 
@@ -34,7 +40,6 @@ kubectl label svc reviews traffic.lb.policy=RING_HASH
 kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
 
 # Use cookie hash policy
-# For http header hash policy use traffic.hash.header.name
 kubectl label svc reviews traffic.hash.cookie.name="mycookie"
 kubectl label svc reviews traffic.hash.cookie.ttl="100000"
 
@@ -59,6 +64,15 @@ Reference:
 * https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-routeaction-hash-policy
 
 # Fault Injection
+
+| Resource | Labels | Default | Description |
+|----------|--------|---------|--------------|
+| Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
+| Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
+| Service | traffic.fault.abort.status | 0 | abort with http status |
+| Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
+| Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
+
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 
@@ -89,6 +103,12 @@ kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.0/samp
 ```
 
 # Tracing 
+
+| Resource | Labels | Default | Description |
+|----------|--------|---------|--------------|
+| Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
+| Service | traffic.tracing.sampling | 100| percentage of tracing sampling |
+
 ```
 kubectl label deployment traffic-zipkin traffic.envoy.enabled=false --overwrite
 
@@ -143,15 +163,6 @@ curl localhost:9090/api/v1/label/__name__/values |jq
 curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_completed |jq
 ```
 
-# Fault Injection
-| Resource | Labels | Default | Description |
-|----------|--------|---------|--------------|
-| Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
-| Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
-| Service | traffic.fault.abort.status | 0 | abort with http status |
-| Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
-| Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
-
 # Circuit Breaker
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
@@ -166,8 +177,6 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
 | Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
 | Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
-| Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
-| Service | traffic.tracing.sampling | 100| percentage of tracing sampling |
 | Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
 | Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
 | Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
