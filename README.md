@@ -6,13 +6,23 @@
  * Circuit breaker
  * Runtime metrics
  
-# Quick start
-## Installation
+# Installation
 ```
 helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 ```
 
-
+# Required labels
+   When user label a deployment with "traffic.envoy.enabled=true", the deployment pods' traffic will be managed.
+   
+   By default, all envoy enabled pods' incoming and outcoming traffic will be blocked. 
+   You need to add traffic.port.(port number)=(protocol) labels to unblock traffic on certain port.
+   The protocol can be http or tcp or direct(bypass envoy load balancing). 
+   
+   For example, following label wil let envoy enabled pods accessing kubernetes service
+   ```
+   kubectl label svc kubernetes traffic.port.443=direct
+   ```
+   
 # Load Balancing
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
@@ -28,14 +38,14 @@ kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
 kubectl label svc reviews traffic.hash.cookie.name="mycookie"
 kubectl label svc reviews traffic.hash.cookie.ttl="100000"
 
-
-
 kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v http://reviews:9080/reviews/0
 # The http response should contains set-cookie, for example:
 # set-cookie: mycookie="3acd918773ba09c5"; Max-Age=100; HttpOnly
 
 #following request should always send to same review pod, it should always contain "ratings" or always be without "ratings"
 kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v -H "Cookie: mycookie=3acd918773ba09c5" http://reviews:9080/reviews/0
+
+kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 ```
 Supported traffic.lb.policy options:
 * ROUND_ROBIN
@@ -66,21 +76,37 @@ kubectl label svc reviews traffic.fault.abort.percentage=100
 
 # should delay 3 seconds and return http 505
 kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl -v http://reviews:9080/reviews/0
+
+kubectl label svc reviews traffic.fault.abort.percentage-
+kubectl label svc reviews traffic.fault.abort.status-
+kubectl label svc reviews traffic.fault.delay.percentage-
+kubectl label svc reviews traffic.fault.delay.time-
+  
+ # should return normal
+kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl -v http://reviews:9080/reviews/0
+
+kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 ```
 
-### Deploy sample application and config
+# Tracing 
 ```
+kubectl label deployment traffic-zipkin traffic.envoy.enabled=false --overwrite
+
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 
-# By default all envoy enabled pod's incoming and outcoming traffic will be blocked or invalided.
-# You need to add following labels to unblock traffic on certain port, the protocol can be http or tcp. 
 kubectl label svc productpage details ratings reviews traffic.port.9080=http
 
-# enable envoy proxy on pods belongs to these deployments
 kubectl label deployment productpage-v1 details-v1 ratings-v1 reviews-v1 reviews-v2 reviews-v3 traffic.envoy.enabled=true
 
-# query example productpage service 
-kubectl run demo-client --image tutum/curl curl productpage:9080/productpage --restart=OnFailure
+kubectl label svc productpage details ratings reviews traffic.tracing.enabled=true
+# sampling rate 50%
+kubectl label svc productpage details ratings reviews traffic.tracing.sampling=50
+
+#repeat following command 10 times
+kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl -v http://productpage:9080:/productpage
+
+# show traceId, number of returned traceId should be around 5
+kubectl exec traffic-zipkin-694c7884d5-x4pn9 curl http://localhost:9411/api/v2/traces?limit=100 | python3 -c "import sys, json; print([x[0]['traceId'] for x in json.load(sys.stdin)])"
 ```
 
 ## Check running envoy proxy instances on each node
