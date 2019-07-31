@@ -12,6 +12,62 @@
 helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 ```
 
+
+# Load Balancing
+```
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
+
+kubectl label svc reviews traffic.port.9080=http
+kubectl label svc reviews traffic.lb.policy=RING_HASH
+
+#need client side envoy enabled
+kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
+
+# Use cookie hash policy
+# For http header hash policy use traffic.hash.header.name
+kubectl label svc reviews traffic.hash.cookie.name="mycookie"
+kubectl label svc reviews traffic.hash.cookie.ttl="100000"
+
+
+
+kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v http://reviews:9080/reviews/0
+# The http response should contains set-cookie, for example:
+# set-cookie: mycookie="3acd918773ba09c5"; Max-Age=100; HttpOnly
+
+#following request should always send to same review pod, it should always contain "ratings" or always be without "ratings"
+kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v -H "Cookie: mycookie=3acd918773ba09c5" http://reviews:9080/reviews/0
+```
+Supported traffic.lb.policy options:
+* ROUND_ROBIN
+* LEAST_REQUEST
+* RING_HASH
+* RANDOM
+* MAGLEV
+
+Reference:
+* https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
+* https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-routeaction-hash-policy
+
+# Fault Injection
+```
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
+
+kubectl label svc reviews traffic.port.9080=http
+kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
+
+kubectl label svc reviews traffic.fault.delay.time=3000
+kubectl label svc reviews traffic.fault.delay.percentage=100
+
+# should delay 3 seconds
+kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl http://reviews:9080/reviews/0
+
+kubectl label svc reviews traffic.fault.abort.status=505
+kubectl label svc reviews traffic.fault.abort.percentage=100
+
+# should delay 3 seconds and return http 505
+kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl -v http://reviews:9080/reviews/0
+```
+
 ### Deploy sample application and config
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
@@ -60,34 +116,6 @@ kubectl port-forward traffic-prometheus-cb5878bd8-fxpcd 9090 &
 curl localhost:9090/api/v1/label/__name__/values |jq
 curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_completed |jq
 ```
-
-# Load Balancing
-```
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
-kubectl label svc reviews traffic.port.9080=http
-kubectl label svc reviews traffic.lb.policy=RING_HASH
-kubectl label svc reviews traffic.hash.cookie.name="mycookie"
-kubectl label svc reviews traffic.hash.cookie.ttl="100000"
-
-kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
-
-kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v http://reviews:9080/reviews/0
-# The http response should contains set-cookie, for example:
-# set-cookie: mycookie="3acd918773ba09c5"; Max-Age=100; HttpOnly
-
-#following request should always send to same review pod, it should always contain "ratings" or always be without "ratings"
-kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v -H "Cookie: mycookie=3acd918773ba09c5" http://reviews:9080/reviews/0
-```
-Supported traffic.lb.policy options:
-* ROUND_ROBIN
-* LEAST_REQUEST
-* RING_HASH
-* RANDOM
-* MAGLEV
-
-Reference:
-* https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
-* https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-routeaction-hash-policy
 
 # Fault Injection
 | Resource | Labels | Default | Description |
