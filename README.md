@@ -52,12 +52,6 @@ kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v -H "Cookie: mycookie=3ac
 
 kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 ```
-Supported traffic.lb.policy options:
-* ROUND_ROBIN
-* LEAST_REQUEST
-* RING_HASH
-* RANDOM
-* MAGLEV
 
 Reference:
 * https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
