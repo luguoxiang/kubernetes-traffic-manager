@@ -186,18 +186,18 @@ Note that all the service label configuration requires client pod's envoy enable
 ## envoy-manager
 Responsible to start/stop envoy container for traffic-control
 
-When user label a deployment with "traffic.envoy.enabled=true", envoy-manager will start a envoy docker instance:
+When a pod is envoy enabled, envoy-manager will start a envoy docker instance:
 * Envoy docker git repo: https://github.com/luguoxiang/traffic-envoy
 * The docker instance will share corresponding pod's network(docker container network mode).
 * The iptable config of the pod network will be changed to redirect all incoming and outcoming traffic to envoy container listen port.
-* The pod will be annotated with traffic.envoy.enabled=true, traffic.envoy.proxy=(docker id)
+* The pod will be annotated with traffic.envoy.proxy=(docker id)
 
 When user label the service with "traffic.envoy.enabled=false"
 
 * the docker instance will be deleted
 * the iptable config will be restored
-* the pod will be annotated with traffic.envoy.enabled=false, traffic.envoy.proxy=""
+* the pod will be annotated with traffic.envoy.proxy=""
 
 ## traffic-control
-traffic-control is a control plane implementation of envoy proxy (https://www.envoyproxy.io/). The data plane is group of "envoyproxy/envoy" images attached to kubernetes pods.
+traffic-control is a control plane implementation of envoy proxy (https://www.envoyproxy.io/). 
 
