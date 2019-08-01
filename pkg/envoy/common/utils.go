@@ -2,7 +2,6 @@ package common
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
@@ -43,24 +42,4 @@ func MakeResource(resources []proto.Message, typeURL string, version string) (*v
 		TypeUrl:     typeURL,
 	}
 	return out, nil
-}
-
-func CreateAccessLogAny(isHttp bool) *types.Any {
-	var format string
-	if isHttp {
-		format = "[%START_TIME%] %REQ(:METHOD)% %PROTOCOL% %RESPONSE_CODE% %DURATION% %UPSTREAM_HOST% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS%\n"
-	} else {
-		format = "[%START_TIME%] TCP %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %UPSTREAM_HOST% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS%\n"
-	}
-
-	result, err := types.MarshalAny(&accesslog.FileAccessLog{
-		Path: "/var/log/access.log",
-		AccessLogFormat: &accesslog.FileAccessLog_Format{
-			Format: format,
-		},
-	})
-	if err != nil {
-		panic(err.Error())
-	}
-	return result
 }

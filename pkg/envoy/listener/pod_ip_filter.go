@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	accesslog_filter "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	tp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/types"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
@@ -68,14 +67,6 @@ func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Filter
 
 	filterConfig, err := types.MarshalAny(&tp.TcpProxy{
 		StatPrefix: info.Name(),
-		AccessLog: []*accesslog_filter.AccessLog{
-			&accesslog_filter.AccessLog{
-				Name: "envoy.file_access_log",
-				ConfigType: &accesslog_filter.AccessLog_TypedConfig{
-					TypedConfig: common.CreateAccessLogAny(false),
-				},
-			},
-		},
 		ClusterSpecifier: &tp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},

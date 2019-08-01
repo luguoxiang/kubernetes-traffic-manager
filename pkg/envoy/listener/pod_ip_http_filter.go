@@ -6,7 +6,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	accesslog_filter "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/types"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
@@ -113,14 +112,6 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.AUTO,
 		StatPrefix: info.Name(),
-		AccessLog: []*accesslog_filter.AccessLog{
-			&accesslog_filter.AccessLog{
-				Name: "envoy.file_access_log",
-				ConfigType: &accesslog_filter.AccessLog_TypedConfig{
-					TypedConfig: common.CreateAccessLogAny(true),
-				},
-			},
-		},
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &v2.RouteConfiguration{
 				Name:         info.Name(),

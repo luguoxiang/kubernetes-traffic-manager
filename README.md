@@ -57,6 +57,10 @@ kubectl port-forward traffic-prometheus-cb5878bd8-wfmgg 9090 &
 # The value should be 2, since reviews-v3 has weight 0
 curl -G http://localhost:9090/api/v1/query --data-urlencode "query=envoy_cluster_outbound_membership_total{envoy_cluster_name='9080|default|reviews'}"|jq
 
+# Required only for runtime metrics
+kubectl label deployment reviews-v1 traffic.envoy.enabled=true
+kubectl label deployment reviews-v2 traffic.envoy.enabled=true
+kubectl label deployment reviews-v3 traffic.envoy.enabled=true
 # repeat many times
 kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v http://reviews:9080/reviews/0
 
@@ -166,8 +170,6 @@ ID                                                                 |Pod         
 a55a9126aef6f402e71c6c9ee61c3c0674aef8b71aeb40334fc1154695d80410   |reviews-v2-7ff5966b99-krw9s    |default     |Up 1 second             |running   |
 
 shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id (prefix of the envoy id) -log
-...
-shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id a55a9 -exec "tail /var/log/access.log"
 ```
 
 ## Check envoy configuration
