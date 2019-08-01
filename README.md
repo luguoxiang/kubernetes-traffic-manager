@@ -187,7 +187,7 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 # Other Configuration Labels
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
-| Pod | traffic.envoy.enabled | false |whether enable envoy docker for pod |
+| Pod, Deployment, StatefulSet, DaemonSet | traffic.envoy.enabled | false | whether to enable envoy docker for related pods|
 | Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
 | Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
 | Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
@@ -195,10 +195,8 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
 | Service | traffic.retries.gateway-error | 0 | number of retries for gateway error |
 | Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
-| Pod, Deployment, StatefulSet, DaemonSet | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
 
 Note that all the service label configuration requires client pod's envoy enabled.
-
 
 # Components
 ## envoy-manager
