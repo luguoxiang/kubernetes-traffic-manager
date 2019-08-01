@@ -37,7 +37,7 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Service | traffic.hash.cookie.name | "" | cookie hash policy |
 | Service | traffic.hash.cookie.ttl | 0 | generate cookie with ttl |
 | Service | traffic.hash.header.name | "" | http header name for hash policy |
-| Pod, Deployment, StatefulSet, DaemonSet | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
+| Pod, Deployment, StatefulSet, DaemonSet | traffic.endpoint.weight | 100 | weight value for related pods [0-128]  |
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
