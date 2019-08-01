@@ -24,6 +24,17 @@ type K8sResourceManager struct {
 	locked               int32
 
 	watchListMap map[string]cache.ListerWatcher
+	restClients  map[string]cache.Getter
+}
+
+func GetRESTClientMap(clientSet kubernetes.Interface) map[string]cache.Getter {
+	return map[string]cache.Getter{
+		"pods":         clientSet.Core().RESTClient(),
+		"services":     clientSet.Core().RESTClient(),
+		"deployments":  clientSet.ExtensionsV1beta1().RESTClient(),
+		"statefulsets": clientSet.AppsV1beta1().RESTClient(),
+		"daemonsets":   clientSet.ExtensionsV1beta1().RESTClient(),
+	}
 }
 
 func NewK8sResourceManager() (*K8sResourceManager, error) {
@@ -39,25 +50,13 @@ func NewK8sResourceManager() (*K8sResourceManager, error) {
 		mutex:                &sync.RWMutex{},
 		labelTypeResourceMap: make(map[string]ResourcesOnLabel),
 		watchListMap:         make(map[string]cache.ListerWatcher),
+		restClients:          GetRESTClientMap(clientSet),
 	}
 
-	result.watchListMap["pods"] = cache.NewListWatchFromClient(
-		clientSet.Core().RESTClient(), "pods", "", fields.Everything())
-
-	result.watchListMap["services"] = cache.NewListWatchFromClient(
-		clientSet.Core().RESTClient(), "services", "", fields.Everything())
-
-	result.watchListMap["deployments"] = cache.NewListWatchFromClient(
-		clientSet.ExtensionsV1beta1().RESTClient(), "deployments", "",
-		fields.Everything())
-
-	result.watchListMap["statefulsets"] = cache.NewListWatchFromClient(
-		clientSet.AppsV1beta1().RESTClient(), "statefulsets", "",
-		fields.Everything())
-
-	result.watchListMap["daemonsets"] = cache.NewListWatchFromClient(
-		clientSet.ExtensionsV1beta1().RESTClient(), "daemonsets", "",
-		fields.Everything())
+	for resource, getter := range result.restClients {
+		result.watchListMap[resource] = cache.NewListWatchFromClient(
+			getter, resource, "", fields.Everything())
+	}
 	return result, nil
 }
 func (manager *K8sResourceManager) NewCond() *sync.Cond {

@@ -39,7 +39,7 @@ func (cps *EndpointsControlPlaneService) addClusterAssignment(pod *kubernetes.Po
 		PodIP:   pod.PodIP,
 		Version: pod.ResourceVersion,
 	}
-	endpoint.Config(pod.Annotations)
+	endpoint.Config(pod)
 
 	key := fmt.Sprintf("%s@%s", pod.Name(), pod.Namespace())
 	clusterAssignment.EndpointMap[key] = endpoint

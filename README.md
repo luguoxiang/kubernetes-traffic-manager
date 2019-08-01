@@ -30,16 +30,35 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 | Service | traffic.hash.cookie.name | "" | cookie hash policy |
 | Service | traffic.hash.cookie.ttl | 0 | generate cookie with ttl |
 | Service | traffic.hash.header.name | "" | http header name for hash policy |
+| Pod, Deployment, StatefulSet, DaemonSet | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
+
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 
 kubectl label svc reviews traffic.port.9080=http
-kubectl label svc reviews traffic.lb.policy=RING_HASH
+kubectl label svc reviews traffic.lb.policy=ROUND_ROBIN
 
 #need client side envoy enabled
 kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
 
+
+kubectl label deployment reviews-v1 traffic.endpoint.weight=100 
+kubectl label deployment reviews-v2 traffic.endpoint.weight=10 
+kubectl label deployment reviews-v3 traffic.endpoint.weight=0
+
+kubectl port-forward traffic-prometheus-cb5878bd8-wfmgg 9090 &
+
+# The value should be 2, since reviews-v3 has weight 0
+curl -G http://localhost:9090/api/v1/query --data-urlencode "query=envoy_cluster_outbound_membership_total{envoy_cluster_name='9080|default|reviews'}"|jq
+
+# repeat many times
+kubectl exec traffic-zipkin-694c7884d5-rbnrt -- curl -v http://reviews:9080/reviews/0
+
+# The value of reviews-v1 and reviews-v2 should be about 10:1
+curl -G http://localhost:9090/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2'}"|jq
+
 # Use cookie hash policy
+kubectl label svc reviews traffic.lb.policy=RING_HASH
 kubectl label svc reviews traffic.hash.cookie.name="mycookie"
 kubectl label svc reviews traffic.hash.cookie.ttl="100000"
 
@@ -176,8 +195,7 @@ curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_comple
 | Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
 | Service | traffic.retries.gateway-error | 0 | number of retries for gateway error |
 | Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
-| Deployment | traffic.endpoint.weight | 100 | weight value for the pods of this deployment [0-128]  |
-| Deployment | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
+| Pod, Deployment, StatefulSet, DaemonSet | traffic.envoy.enabled | false | whether to enable envoy docker for the pods of this deployment |
 
 Note that all the service label configuration requires client pod's envoy enabled.
 

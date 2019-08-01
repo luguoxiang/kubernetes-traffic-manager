@@ -19,8 +19,8 @@ func NewFakeK8sResourceManager() *K8sResourceManager {
 		watchListMap:         make(map[string]cache.ListerWatcher),
 	}
 
-	for _, resourceType := range []string{"pods", "services", "deployments", "statefulsets", "daemonsets"} {
-		result.watchListMap[resourceType] = fcache.NewFakeControllerSource()
+	for resource, _ := range GetRESTClientMap(result.ClientSet) {
+		result.watchListMap[resource] = fcache.NewFakeControllerSource()
 	}
 	return result
 }

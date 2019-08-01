@@ -41,7 +41,7 @@ func TestDeploymentEnvoyToPod(t *testing.T) {
 
 	pod1, _ := k8sManager.ClientSet.CoreV1().Pods("test-ns").Get("Comp1-pod", metav1.GetOptions{})
 
-	assert.Equal(t, pod1.Annotations["traffic.deployment.envoy.enabled"], "true")
+	assert.Equal(t, pod1.Annotations["traffic.rs.envoy.enabled"], "true")
 	podWatchlist.Modify(pod1)
 	time.Sleep(time.Second)
 
@@ -55,7 +55,7 @@ func TestDeploymentEnvoyToPod(t *testing.T) {
 
 	pod1, _ = k8sManager.ClientSet.CoreV1().Pods("test-ns").Get("Comp1-pod", metav1.GetOptions{})
 
-	assert.Equal(t, pod1.Annotations["traffic.deployment.envoy.enabled"], "")
+	assert.Equal(t, pod1.Annotations["traffic.rs.envoy.enabled"], "")
 }
 
 func TestDeploymentWeightToPod(t *testing.T) {
@@ -89,7 +89,7 @@ func TestDeploymentWeightToPod(t *testing.T) {
 
 	pod1, _ := k8sManager.ClientSet.CoreV1().Pods("test-ns").Get("Comp1-pod", metav1.GetOptions{})
 
-	assert.Equal(t, pod1.Annotations["traffic.deployment.endpoint.weight"], "50")
+	assert.Equal(t, pod1.Annotations["traffic.rs.endpoint.weight"], "50")
 	podWatchlist.Modify(pod1)
 	time.Sleep(time.Second)
 
@@ -103,7 +103,7 @@ func TestDeploymentWeightToPod(t *testing.T) {
 
 	pod1, _ = k8sManager.ClientSet.CoreV1().Pods("test-ns").Get("Comp1-pod", metav1.GetOptions{})
 
-	assert.Equal(t, pod1.Annotations["traffic.deployment.endpoint.weight"], "80")
+	assert.Equal(t, pod1.Annotations["traffic.rs.endpoint.weight"], "80")
 	podWatchlist.Modify(pod1)
 	time.Sleep(time.Second)
 
@@ -111,5 +111,5 @@ func TestDeploymentWeightToPod(t *testing.T) {
 	time.Sleep(time.Second)
 
 	pod1, _ = k8sManager.ClientSet.CoreV1().Pods("test-ns").Get("Comp1-pod", metav1.GetOptions{})
-	assert.Equal(t, pod1.Annotations["traffic.deployment.endpoint.weight"], "")
+	assert.Equal(t, pod1.Annotations["traffic.rs.endpoint.weight"], "")
 }

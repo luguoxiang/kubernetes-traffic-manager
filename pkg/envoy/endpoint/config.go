@@ -8,11 +8,15 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
+const (
+	WEIGHT_LABEL            = "traffic.endpoint.weight"
+	DEPLOYMENT_WEIGHT_LABEL = kubernetes.POD_DEPLOYMENT_PREFIX + "endpoint.weight"
+)
+
 type EndpointInfo struct {
 	PodIP   string
 	Weight  uint32
 	Version string
-	Healthy bool
 }
 
 func (info EndpointInfo) String() string {
@@ -21,7 +25,7 @@ func (info EndpointInfo) String() string {
 
 func NeedDeploymentToPodAnnotation(key string) bool {
 	switch key {
-	case "traffic.endpoint.weight":
+	case WEIGHT_LABEL:
 		return true
 	case kubernetes.ENVOY_ENABLED:
 		return true
@@ -30,26 +34,22 @@ func NeedDeploymentToPodAnnotation(key string) bool {
 	}
 }
 
-func (info *EndpointInfo) Config(config map[string]string) {
-	info.Weight = 100
-	info.Healthy = true
-	for k, v := range config {
-		if v == "" {
-			continue
-		}
-		if kubernetes.AnnotationHasDeploymentLabel(k) {
-			k = kubernetes.DeploymentAnnotationToLabel(k)
-		}
-		switch k {
-		case "traffic.endpoint.weight":
-			weight := kubernetes.GetLabelValueUInt32(v)
-			if weight > 128 {
-				weight = 128
-			}
-			info.Weight = weight
-		}
-	}
+func (info *EndpointInfo) Config(pod *kubernetes.PodInfo) {
 
+	weight := pod.Labels[WEIGHT_LABEL]
+	if weight == "" {
+		//pod label override deployment label
+		weight = pod.Annotations[DEPLOYMENT_WEIGHT_LABEL]
+	}
+	if weight != "" {
+		info.Weight = kubernetes.GetLabelValueUInt32(weight)
+		if info.Weight > 128 {
+			//should fall into [0, 128]
+			info.Weight = 128
+		}
+	} else {
+		info.Weight = 100
+	}
 }
 
 func (info *EndpointInfo) CreateLoadBalanceEndpoint(port uint32) *endpoint.LbEndpoint {

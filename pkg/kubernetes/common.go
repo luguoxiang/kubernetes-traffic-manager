@@ -16,15 +16,15 @@ const (
 
 	ENVOY_ENABLED = "traffic.envoy.enabled"
 
-	ENVOY_ENABLED_BY_DEPLOYMENT = "traffic.deployment.envoy.enabled"
-	ENVOY_PROXY_ANNOTATION      = "traffic.envoy.proxy"
-	LOCAL_ACCESS_POD_IP         = "traffic.envoy.local.use_podip"
+	ENVOY_PROXY_ANNOTATION = "traffic.envoy.proxy"
+	LOCAL_ACCESS_POD_IP    = "traffic.envoy.local.use_podip"
 
 	DEFAULT_WEIGHT = 100
 
-	POD_SERVICE_PREFIX    = "traffic.svc."
-	POD_DEPLOYMENT_PREFIX = "traffic.deployment."
-	HEADLESS              = "traffic.headless"
+	POD_SERVICE_PREFIX          = "traffic.svc."
+	POD_DEPLOYMENT_PREFIX       = "traffic.rs."
+	ENVOY_ENABLED_BY_DEPLOYMENT = POD_DEPLOYMENT_PREFIX + "envoy.enabled"
+	HEADLESS                    = "traffic.headless"
 )
 
 func GetLabelValueUInt32(value string) uint32 {
@@ -92,15 +92,11 @@ func PodEnvoyByService(svc string) string {
 }
 
 func AnnotationHasDeploymentLabel(label string) bool {
-	return strings.HasPrefix(label, "traffic.deployment.")
+	return strings.HasPrefix(label, POD_DEPLOYMENT_PREFIX)
 }
 
 func DeploymentLabelToPodAnnotation(label string) string {
-	return fmt.Sprintf("traffic.deployment.%s", label[len("traffic."):])
-}
-
-func DeploymentAnnotationToLabel(label string) string {
-	return fmt.Sprintf("traffic.%s", label[len("traffic.deployment."):])
+	return fmt.Sprintf("%s%s", POD_DEPLOYMENT_PREFIX, label[len("traffic."):])
 }
 
 func AnnotationHasServiceLabel(svc string, label string) bool {
