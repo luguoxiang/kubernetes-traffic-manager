@@ -23,6 +23,13 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
    kubectl label svc kubernetes traffic.port.443=direct
    ```
    
+# Runtime metrics
+```
+kubectl port-forward traffic-prometheus-cb5878bd8-fxpcd 9090 &
+curl localhost:9090/api/v1/label/__name__/values |jq
+curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_completed |jq
+```
+
 # Load Balancing
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
@@ -169,12 +176,6 @@ kubectl exec traffic-control-89778f5d8-nmvrn -- ./envoy-config --nodeId reviews-
 ```
 node id is pod name and pod namespace
 
-## Check runtime metrics
-```
-kubectl port-forward traffic-prometheus-cb5878bd8-fxpcd 9090 &
-curl localhost:9090/api/v1/label/__name__/values |jq
-curl localhost:9090/api/v1/query?query=envoy_cluster_outbound_upstream_rq_completed |jq
-```
 
 # Circuit Breaker
 | Resource | Labels | Default | Description |
