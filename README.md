@@ -36,12 +36,11 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 
 kubectl label svc reviews traffic.port.9080=http
-kubectl label svc reviews traffic.lb.policy=ROUND_ROBIN
 
-#need client side envoy enabled
+# Need client side envoy enabled
 kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
 
-
+# Default lb policy is ROUND_ROBIN
 kubectl label deployment reviews-v1 traffic.endpoint.weight=100 
 kubectl label deployment reviews-v2 traffic.endpoint.weight=10 
 kubectl label deployment reviews-v3 traffic.endpoint.weight=0
