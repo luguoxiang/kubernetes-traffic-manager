@@ -15,7 +15,7 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
    When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
    
    By default, all envoy enabled pods' incoming and outcoming traffic will be blocked. 
-   You need to add traffic.port.(port number)=(protocol) labels to unblock traffic on certain port.
+   You need to add traffic.port.(port number)=(protocol) labels for service or pod to unblock traffic on certain port.
    The protocol can be http or tcp or direct(bypass envoy load balancing). 
    
    For example, following label wil let envoy enabled pods accessing kubernetes service
@@ -90,11 +90,11 @@ Reference:
 
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
-| Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
-| Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
-| Service | traffic.fault.abort.status | 0 | abort with http status |
-| Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
-| Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
+| Pod, Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
+| Pod, Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
+| Pod, Service | traffic.fault.abort.status | 0 | abort with http status |
+| Pod, Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
+| Pod, Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
@@ -129,8 +129,8 @@ kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.0/samp
 
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
-| Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
-| Service | traffic.tracing.sampling | 100 | percentage of tracing sampling (float) |
+| Pod, Service | traffic.tracing.enabled | false | enable tracing for requests to or from envoy enabled pods of this service | 
+| Pod, Service | traffic.tracing.sampling | 100 | percentage of tracing sampling (float) |
 
 ```
 kubectl label deployment traffic-zipkin traffic.envoy.enabled=false --overwrite
@@ -193,10 +193,10 @@ node id is pod name and pod namespace
 | Pod, Deployment, StatefulSet, DaemonSet | traffic.envoy.enabled | false | whether to enable envoy docker for related pods|
 | Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
 | Pod, Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
-| Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
-| Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
-| Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
-| Service | traffic.retries.gateway-error | 0 | number of retries for gateway error |
+| Pod, Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
+| Pod, Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
+| Pod, Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
+| Pod, Service | traffic.retries.gateway-error | 0 | number of retries for gateway error |
 | Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
 
 Note that all the service label configuration requires client pod's envoy enabled.
