@@ -53,16 +53,10 @@ func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string) []route.Virtu
 		//If pod ip is used to access the service, should use http Host header to match the target service name
 		// so that we can do load balance
 		for cluster, domains := range info.Domains {
-			if len(info.Domains) == 1 {
-				// if there is only one domain, use it without match
-				domains = common.ALL_DOMAIN
-			}
 			virtualHosts = append(virtualHosts, info.CreateVirtualHost(cluster, domains))
 		}
-		if len(info.Domains) != 1 {
-			//if no domain matched, route to static ip
-			virtualHosts = append(virtualHosts, info.CreateVirtualHost(staticCluster, common.ALL_DOMAIN))
-		}
+		//if no domain matched, route to static ip
+		virtualHosts = append(virtualHosts, info.CreateVirtualHost(staticCluster, common.ALL_DOMAIN))
 	} else {
 		//ingress cluster should not apply any config
 		var noconfig HttpPodIpFilterInfo
