@@ -192,7 +192,7 @@ node id is pod name and pod namespace
 |----------|--------|---------|--------------|
 | Pod, Deployment, StatefulSet, DaemonSet | traffic.envoy.enabled | false | whether to enable envoy docker for related pods|
 | Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
-| Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
+| Pod, Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
 | Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
 | Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
 | Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
