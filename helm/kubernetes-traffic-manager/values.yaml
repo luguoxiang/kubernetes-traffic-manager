@@ -2,6 +2,7 @@ images:
   envoyProxy: docker.io/luguoxiang/traffic-envoy-proxy:1.11.0
   trafficControl: docker.io/luguoxiang/traffic-control
   envoyManager: docker.io/luguoxiang/envoy-manager
+  trafficMonitor: docker.io/luguoxiang/traffic-monitor
   
 port:
   trafficControl: 18000
@@ -9,7 +10,10 @@ port:
   envoyProxy: 10000
   trafficZipkin: 9411
   prometheusPort: 9090
+  monitorMetrics: 32466
   
+monitor:
+  enabled: false
 
 proxy:
   uid: 1337

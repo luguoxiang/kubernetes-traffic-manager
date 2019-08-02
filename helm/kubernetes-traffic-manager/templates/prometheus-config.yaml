@@ -28,3 +28,16 @@ data:
         replacement: ${1}:{{ .Values.port.envoyAdmin }}
       - target_label: __metrics_path__
         replacement: /stats/prometheus
+{{if .Values.monitor.enabled }}
+    - job_name: 'traffic-nodes'
+      kubernetes_sd_configs:
+      - role: node
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __address__
+        replacement: ${1}:32466
+  {{end}}

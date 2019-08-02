@@ -1,0 +1,25 @@
+{{if .Values.monitor.enabled }}
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: traffic-monitor
+  labels:
+    app: traffic-monitor
+spec:
+  template:
+    metadata:
+      labels:
+        app: traffic-monitor
+    spec:
+      hostNetwork: true
+      containers:
+      - name: traffic-monitor
+        image: "{{ .Values.images.trafficMonitor }}:{{ .Chart.Version }}"
+        imagePullPolicy: Always
+        command:
+        - "./traffic-monitor"
+        - "-alsologtostderr"   
+        env:
+        - name: VIZ_METRICS_PORT
+          value: '{{ .Values.port.monitorMetrics }}'
+{{end}}
