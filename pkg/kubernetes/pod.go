@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
@@ -22,6 +21,9 @@ type PodInfo struct {
 	Containers      []string
 }
 
+func (pod *PodInfo) Valid() bool {
+	return !pod.HostNetwork && pod.PodIP != ""
+}
 func (pod *PodInfo) EnvoyDockerId() string {
 	return pod.Annotations[ENVOY_PROXY_ANNOTATION]
 }
@@ -38,55 +40,121 @@ func (pod *PodInfo) EnvoyEnabled() bool {
 	return GetLabelValueBool(pod.Annotations[ENVOY_ENABLED_BY_DEPLOYMENT])
 }
 
-func (pod *PodInfo) HasHeadlessService() bool {
-	for k, v := range pod.Annotations {
-		if strings.HasPrefix(k, POD_SERVICE_PREFIX) && strings.HasSuffix(k, ".headless") && GetLabelValueBool(v) {
-			return true
-		}
-	}
-	return false
-}
-
 type PodPortInfo struct {
-	Protocol  string
-	Service   string
+	Protocol int
+	//Service   string
 	ConfigMap map[string]string
 }
 
-func GetServiceAndPort(annotation string) (string, uint32) {
-	if strings.HasPrefix(annotation, POD_SERVICE_PREFIX) {
-		items := strings.Split(annotation, ".")
-		itemLen := len(items)
-		if items[itemLen-2] == "port" {
-			port, err := strconv.ParseUint(items[itemLen-1], 10, 32)
-			if err == nil {
-				return items[itemLen-3], uint32(port)
-			}
-		}
+func getPort(value string) uint32 {
+	port, err := strconv.ParseUint(value, 10, 32)
+	if err != nil {
+		return 0
 	}
-	return "", 0
+	return uint32(port)
 }
-func (pod *PodInfo) GetPortSet() map[uint32]bool {
-	result := make(map[uint32]bool)
+
+func getServiceAndPort(annotation string) (string, uint32) {
+	tokens := strings.Split(annotation, ".")
+	if len(tokens) < 5 || tokens[0] != "traffic" || tokens[1] != "svc" || tokens[2] == "" || tokens[3] != "port" {
+		return "", 0
+	}
+	port := getPort(tokens[4])
+	if port == 0 {
+		return "", 0
+	}
+	return tokens[2], port
+}
+
+func (pod *PodInfo) GetPortSet() map[uint32]map[string]bool {
+	result := make(map[uint32]map[string]bool)
 	for k, v := range pod.Annotations {
 		if v == "" {
 			continue
 		}
+		service, port := getServiceAndPort(k)
+		if port == 0 {
+			continue
+		}
+		if result[port] == nil {
+			result[port] = map[string]bool{
+				service: true,
+			}
+		} else {
+			result[port][service] = true
+		}
+	}
 
-		_, port := GetServiceAndPort(k)
-		result[port] = true
-
+	for k, v := range pod.Labels {
+		if v == "" {
+			continue
+		}
+		tokens := strings.Split(k, ".")
+		if len(tokens) < 3 || tokens[0] != "traffic" || tokens[1] != "port" {
+			continue
+		}
+		port := getPort(tokens[2])
+		if port == 0 {
+			continue
+		}
+		if result[port] == nil {
+			result[port] = map[string]bool{}
+		}
 	}
 	return result
 }
-func (pod *PodInfo) GetPortConfig() map[uint32]PodPortInfo {
+
+func (pod *PodInfo) collectPort(configMap map[string]string, result map[uint32]*PodPortInfo) {
+	for k, v := range configMap {
+		tokens := strings.Split(k, ".")
+		if len(tokens) != 3 || tokens[0] != "traffic" || tokens[1] != "port" {
+			continue
+		}
+		protocol := GetProtocol(v)
+		if protocol < 0 {
+			continue
+		}
+		port := getPort(tokens[2])
+		if port == 0 {
+			continue
+		}
+
+		portInfo := result[port]
+		if portInfo == nil {
+			portInfo = &PodPortInfo{
+				ConfigMap: make(map[string]string),
+				Protocol:  protocol,
+			}
+			result[port] = portInfo
+		} else {
+			if protocol > portInfo.Protocol {
+				portInfo.Protocol = protocol
+			}
+		}
+
+		//if the port has two services's annotations,merge their config
+		for k1, v1 := range configMap {
+			if !strings.HasPrefix(k1, "traffic.") {
+				continue
+			}
+			if strings.HasPrefix(k1, "traffic.port.") {
+				continue
+			}
+			portInfo.ConfigMap[k1] = v1
+		}
+
+	}
+}
+
+func (pod *PodInfo) GetPortConfig() map[uint32]*PodPortInfo {
 	serviceConfig := make(map[string]map[string]string)
+
 	for k, v := range pod.Annotations {
 		if v == "" {
 			continue
 		}
 		tokens := strings.Split(k, ".")
-		if len(tokens) < 4 || tokens[0] != "traffic" || tokens[1] != "svc" {
+		if len(tokens) < 4 || tokens[0] != "traffic" || tokens[1] != "svc" || tokens[2] == "" {
 			continue
 		}
 		service := tokens[2]
@@ -96,31 +164,16 @@ func (pod *PodInfo) GetPortConfig() map[uint32]PodPortInfo {
 			configMap = make(map[string]string)
 			serviceConfig[service] = configMap
 		}
+
 		newKey := "traffic" + k[len("traffic.svc.")+len(service):]
 		configMap[newKey] = v
-
 	}
-	result := make(map[uint32]PodPortInfo)
-	for k, v := range pod.Annotations {
-		if v == "" {
-			continue
-		}
+	result := make(map[uint32]*PodPortInfo)
 
-		service, port := GetServiceAndPort(k)
-		if service != "" && port != 0 {
-			podPortInfo := PodPortInfo{
-				Service:   service,
-				ConfigMap: serviceConfig[service],
-				Protocol:  v,
-			}
-			oldInfo := result[port]
-			if oldInfo.ConfigMap != nil {
-				glog.Warningf("port %d belongs to more than one services, use %s's config", port, service)
-			}
-			result[port] = podPortInfo
-		}
-
+	for _, configMap := range serviceConfig {
+		pod.collectPort(configMap, result)
 	}
+	pod.collectPort(pod.Labels, result)
 	return result
 }
 

@@ -18,7 +18,7 @@ func NewServiceToPodAnnotator(k8sManager *kubernetes.K8sResourceManager) *Servic
 }
 
 func (pa *ServiceToPodAnnotator) PodValid(pod *kubernetes.PodInfo) bool {
-	return true
+	return pod.Valid()
 }
 
 func (pa *ServiceToPodAnnotator) removeServiceAnnotationToPod(pod *kubernetes.PodInfo, svc *kubernetes.ServiceInfo) {
@@ -59,17 +59,12 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 		}
 
 	}
-	headless := false
-	if svc.ClusterIP == "None" {
-		key := kubernetes.PodHeadlessByService(svc.Name())
-		annotations[key] = "true"
-		headless = true
-	}
+
 	for key, value := range svc.Labels {
 		if value == "" {
 			continue
 		}
-		if cluster.NeedServiceToPodAnnotation(key, headless) || listener.NeedServiceToPodAnnotation(key, headless) {
+		if cluster.NeedServiceToPodAnnotation(key) || listener.NeedServiceToPodAnnotation(key) {
 			podKey := kubernetes.ServiceLabelToPodAnnotation(svc.Name(), key)
 			annotations[podKey] = value
 		}

@@ -15,8 +15,9 @@ const (
 	ORIGINAL_DST          = "envoy.listener.original_dst"
 	HttpFaultInjection    = "envoy.fault"
 
-	PROTO_DIRECT = "direct"
-	PROTO_HTTP   = "http"
-
 	LOCALHOST = "127.0.0.1"
+)
+
+var (
+	ALL_DOMAIN = []string{"*"}
 )

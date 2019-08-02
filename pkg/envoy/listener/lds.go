@@ -45,20 +45,17 @@ func NewListenersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) 
 }
 
 func (cps *ListenersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo) bool {
-	return svc.OutboundEnabled()
+	return true
 }
 
 func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	for _, port := range svc.Ports {
 		protocol := svc.Protocol(port.Port)
-		if svc.IsKubeAPIService() {
-			info := NewClusterIpFilterInfo(svc, port.Port)
-			cps.UpdateResource(info, svc.ResourceVersion)
-		} else if protocol == common.PROTO_HTTP {
+		if protocol == kubernetes.PROTO_HTTP {
 			info := NewHttpClusterIpFilterInfo(svc, port.Port)
 			info.Config(svc.Labels)
 			cps.UpdateResource(info, svc.ResourceVersion)
-		} else if protocol != "" {
+		} else if protocol >= 0 {
 			info := NewClusterIpFilterInfo(svc, port.Port)
 			cps.UpdateResource(info, svc.ResourceVersion)
 		}
@@ -66,10 +63,9 @@ func (cps *ListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInf
 }
 func (cps *ListenersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
 	for _, port := range svc.Ports {
-		var info common.EnvoyResource
 		protocol := svc.Protocol(port.Port)
-		if protocol != "" {
-			info = NewClusterIpFilterInfo(svc, port.Port)
+		if protocol >= 0 {
+			info := NewClusterIpFilterInfo(svc, port.Port)
 			cps.UpdateResource(info, "")
 		}
 
@@ -85,8 +81,7 @@ func (cps *ListenersControlPlaneService) ServiceUpdated(oldService, newService *
 }
 
 func (manager *ListenersControlPlaneService) PodValid(pod *kubernetes.PodInfo) bool {
-	//Hostnetwork pod should not have envoy enabled, so no inbound listener
-	return !pod.HostNetwork && pod.PodIP != "" && (pod.EnvoyEnabled() || pod.HasHeadlessService())
+	return pod.Valid()
 }
 
 func (cps *ListenersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {
@@ -101,15 +96,13 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 
 	if newPod != nil {
 		for port, portInfo := range newPod.GetPortConfig() {
-			configMap := portInfo.ConfigMap
-			headless := (configMap != nil && kubernetes.GetLabelValueBool(configMap[kubernetes.HEADLESS]))
-			if portInfo.Protocol == common.PROTO_HTTP {
-				info := NewHttpPodIpFilterInfo(newPod, port, headless)
+			if portInfo.Protocol == kubernetes.PROTO_HTTP {
+				info := NewHttpPodIpFilterInfo(newPod, port)
 				info.Config(portInfo.ConfigMap)
 				visited[info.Name()] = true
 				cps.UpdateResource(info, newPod.ResourceVersion)
-			} else {
-				info := NewPodIpFilterInfo(newPod, port, headless)
+			} else if portInfo.Protocol >= 0 {
+				info := NewPodIpFilterInfo(newPod, port)
 				visited[info.Name()] = true
 				cps.UpdateResource(info, newPod.ResourceVersion)
 			}
@@ -118,7 +111,7 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	}
 	if oldPod != nil {
 		for port, _ := range oldPod.GetPortSet() {
-			info := NewPodIpFilterInfo(oldPod, port, true)
+			info := NewPodIpFilterInfo(oldPod, port)
 			if visited[info.Name()] {
 				continue
 			}

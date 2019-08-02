@@ -33,38 +33,13 @@ func (info *HttpClusterIpFilterInfo) String() string {
 	return fmt.Sprintf("%s,%s,tracing=%v", info.Name(), info.clusterIP, info.Tracing)
 }
 
-func (info *HttpClusterIpFilterInfo) CreateVirtualHost() route.VirtualHost {
-	routeAction := &route.RouteAction{
-		ClusterSpecifier: &route.RouteAction_Cluster{
-			Cluster: info.ClusterName(),
-		},
-	}
-	info.ConfigRouteAction(routeAction)
-
-	return route.VirtualHost{
-		Name:    fmt.Sprintf("%s_vh", info.Name()),
-		Domains: []string{"*"},
-		Routes: []route.Route{{
-			Match: route.RouteMatch{
-				PathSpecifier: &route.RouteMatch_Prefix{
-					Prefix: "/",
-				},
-			},
-			Action: &route.Route_Route{
-				Route: routeAction,
-			},
-		}},
-	}
-
-}
-
 func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
 	if info.clusterIP == "" || info.clusterIP == "None" {
 		return listener.FilterChain{}, nil
 	}
 	routeConfig := &v2.RouteConfiguration{
 		Name:         info.Name(),
-		VirtualHosts: []route.VirtualHost{info.CreateVirtualHost()},
+		VirtualHosts: []route.VirtualHost{info.CreateVirtualHost(info.ClusterName(), common.ALL_DOMAIN)},
 	}
 
 	manager := &hcm.HttpConnectionManager{

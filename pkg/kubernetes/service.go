@@ -28,13 +28,9 @@ func (service *ServiceInfo) Type() ResourceType {
 	return SERVICE_TYPE
 }
 
-func (service *ServiceInfo) IsKubeAPIService() bool {
-	return service.Name() == "kubernetes" && service.Namespace() == "default"
-}
-
-func (service *ServiceInfo) Protocol(port uint32) string {
+func (service *ServiceInfo) Protocol(port uint32) int {
 	key := ServicePortProtocol(port)
-	return service.Labels[key]
+	return GetProtocol(service.Labels[key])
 }
 
 func (service *ServiceInfo) Name() string {
@@ -49,15 +45,6 @@ func (service *ServiceInfo) GetSelector() map[string]string {
 	return service.selector
 }
 
-func (service *ServiceInfo) OutboundEnabled() bool {
-	for _, port := range service.Ports {
-		key := ServicePortProtocol(port.Port)
-		if service.Labels[key] != "" {
-			return true
-		}
-	}
-	return false
-}
 func (service *ServiceInfo) String() string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("Service %s@%s Port=", service.name, service.namespace))

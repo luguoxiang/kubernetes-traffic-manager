@@ -24,9 +24,25 @@ const (
 	POD_SERVICE_PREFIX          = "traffic.svc."
 	POD_DEPLOYMENT_PREFIX       = "traffic.rs."
 	ENVOY_ENABLED_BY_DEPLOYMENT = POD_DEPLOYMENT_PREFIX + "envoy.enabled"
-	HEADLESS                    = "traffic.headless"
+
+	PROTO_HTTP   = 2
+	PROTO_TCP    = 1
+	PROTO_DIRECT = 0
 )
 
+func GetProtocol(value string) int {
+	value = strings.ToLower(value)
+	switch value {
+	case "":
+		return -1
+	case "http":
+		return PROTO_HTTP
+	case "tcp":
+		return PROTO_TCP
+	default:
+		return PROTO_DIRECT
+	}
+}
 func GetLabelValueUInt32(value string) uint32 {
 	if value == "" {
 		return 0
@@ -105,9 +121,6 @@ func AnnotationHasServiceLabel(svc string, label string) bool {
 
 func ServiceLabelToPodAnnotation(svc string, label string) string {
 	return podKeyByService(svc, label[len("traffic."):])
-}
-func PodHeadlessByService(svc string) string {
-	return podKeyByService(svc, "headless")
 }
 
 func (e ResourceType) String() string {

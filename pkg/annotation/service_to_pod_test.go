@@ -41,13 +41,12 @@ func TestServiceTracingToPod(t *testing.T) {
 
 	pod1, _ := k8sManager.ClientSet.CoreV1().Pods("test-ns").Get("Comp1-pod", metav1.GetOptions{})
 
-	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.headless"], "")
-	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.rate.limit"], "")
+	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.rate.limit"], "100")
 	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.tracing.enabled"], "true")
 	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.port.8080"], "http")
 }
 
-func TestServiceHeadlessToPod(t *testing.T) {
+func TestServiceConfigToPod(t *testing.T) {
 	k8sManager := kubernetes.NewFakeK8sResourceManager()
 	annotator := NewServiceToPodAnnotator(k8sManager)
 
@@ -68,7 +67,6 @@ func TestServiceHeadlessToPod(t *testing.T) {
 	podWatchlist.Add(&pod)
 
 	var service corev1.Service
-	service.Spec.ClusterIP = "None"
 	service.Namespace = "test-ns"
 	service.Labels = map[string]string{"traffic.tracing.enabled": "true", "traffic.rate.limit": "100"}
 	service.Spec.Selector = map[string]string{"c": "d"}
@@ -79,7 +77,6 @@ func TestServiceHeadlessToPod(t *testing.T) {
 
 	pod1, _ := k8sManager.ClientSet.CoreV1().Pods("test-ns").Get("Comp1-pod", metav1.GetOptions{})
 
-	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.headless"], "true")
 	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.rate.limit"], "100")
 	assert.Equal(t, pod1.Annotations["traffic.svc.Service1.tracing.enabled"], "true")
 

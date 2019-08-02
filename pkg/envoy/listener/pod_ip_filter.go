@@ -17,18 +17,15 @@ type PodIpFilterInfo struct {
 	podIP            string
 	node             string
 	port             uint32
-	Headless         bool
 	LocalAccessPodIP bool
 }
 
-func NewPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32, headless bool) *PodIpFilterInfo {
+func NewPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32) *PodIpFilterInfo {
 	return &PodIpFilterInfo{
 		port:             port,
 		podIP:            pod.PodIP,
 		LocalAccessPodIP: kubernetes.GetLabelValueBool(pod.Labels[kubernetes.LOCAL_ACCESS_POD_IP]),
 		node:             fmt.Sprintf("%s.%s", pod.Name(), pod.Namespace()),
-		//the pod belongs to a headless service, need to listen on pod ip
-		Headless: headless,
 	}
 }
 
@@ -44,7 +41,7 @@ func (info *PodIpFilterInfo) Name() string {
 	return fmt.Sprintf("%d|%s.static", info.port, strings.Replace(info.node, ".", "|", -1))
 }
 
-func (info *PodIpFilterInfo) getClusterName(nodeId string) string {
+func (info *PodIpFilterInfo) getStaticClusterName(nodeId string) string {
 	if nodeId == info.node {
 		if info.LocalAccessPodIP {
 			return cluster.StaticClusterName(info.podIP, info.port)
@@ -52,18 +49,12 @@ func (info *PodIpFilterInfo) getClusterName(nodeId string) string {
 		//use local loop interface to access local workload
 		return cluster.StaticClusterName(common.LOCALHOST, info.port)
 	} else {
-		if info.Headless {
-			return cluster.StaticClusterName(info.podIP, info.port)
-		}
+		return cluster.StaticClusterName(info.podIP, info.port)
 	}
-	return ""
 }
 
 func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
-	clusterName := info.getClusterName(node.Id)
-	if clusterName == "" {
-		return listener.FilterChain{}, nil
-	}
+	clusterName := info.getStaticClusterName(node.Id)
 
 	filterConfig, err := types.MarshalAny(&tp.TcpProxy{
 		StatPrefix: info.Name(),

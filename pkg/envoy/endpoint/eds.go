@@ -22,7 +22,7 @@ func NewEndpointsControlPlaneService(k8sManager *kubernetes.K8sResourceManager) 
 }
 
 func (manager *EndpointsControlPlaneService) PodValid(pod *kubernetes.PodInfo) bool {
-	return true
+	return pod.Valid()
 }
 
 func (cps *EndpointsControlPlaneService) addClusterAssignment(pod *kubernetes.PodInfo, clusterAssignment *ClusterAssignmentInfo) {
@@ -71,9 +71,8 @@ func (cps *EndpointsControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
 func (cps *EndpointsControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
 	visited := make(map[string]bool)
 	if newPod != nil {
-		for key, _ := range newPod.Annotations {
-			service, port := kubernetes.GetServiceAndPort(key)
-			if service != "" && port != 0 {
+		for port, serviceMap := range newPod.GetPortSet() {
+			for service, _ := range serviceMap {
 				clusterAssigment := NewClusterAssignmentInfo(service, newPod.Namespace(), port)
 				visited[clusterAssigment.Name()] = true
 				cps.addClusterAssignment(newPod, clusterAssigment)
@@ -82,9 +81,8 @@ func (cps *EndpointsControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	}
 
 	if oldPod != nil {
-		for key, _ := range oldPod.Annotations {
-			service, port := kubernetes.GetServiceAndPort(key)
-			if service != "" && port != 0 {
+		for port, serviceMap := range oldPod.GetPortSet() {
+			for service, _ := range serviceMap {
 				clusterName := cluster.ServiceClusterName(service, oldPod.Namespace(), port)
 				if !visited[clusterName] {
 					cps.removeClusterAssignment(oldPod, clusterName)

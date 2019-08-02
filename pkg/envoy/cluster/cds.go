@@ -38,7 +38,7 @@ func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]com
 }
 
 func (cps *ClustersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo) bool {
-	return svc.OutboundEnabled()
+	return true
 }
 
 func (cps *ClustersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
@@ -53,12 +53,12 @@ func (cps *ClustersControlPlaneService) ServiceUpdated(oldService, newService *k
 	if newService != nil {
 		for _, port := range newService.Ports {
 			protocol := newService.Protocol(port.Port)
-			if protocol == common.PROTO_DIRECT {
+			if protocol == kubernetes.PROTO_DIRECT {
 				cluster := NewByPassClusterInfo(newService, port.Port)
 				cluster.Config(newService.Labels)
 				visited[cluster.Name()] = true
 				cps.UpdateResource(cluster, newService.ResourceVersion)
-			} else if protocol != "" {
+			} else if protocol >= 0 {
 				cluster := NewServiceClusterInfo(newService, port.Port)
 				cluster.Config(newService.Labels)
 				visited[cluster.Name()] = true
@@ -79,8 +79,7 @@ func (cps *ClustersControlPlaneService) ServiceUpdated(oldService, newService *k
 }
 
 func (cps *ClustersControlPlaneService) PodValid(pod *kubernetes.PodInfo) bool {
-	//Hostnetwork pod should not have envoy enabled, so there will be no inbound cluster for it
-	return !pod.HostNetwork && pod.PodIP != ""
+	return pod.Valid()
 }
 
 func (cps *ClustersControlPlaneService) PodAdded(pod *kubernetes.PodInfo) {

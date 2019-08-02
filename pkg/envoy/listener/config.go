@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	httpfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
@@ -33,7 +34,7 @@ type HttpListenerConfigInfo struct {
 	HashCookieTTL  time.Duration
 }
 
-func NeedServiceToPodAnnotation(label string, headless bool) bool {
+func NeedServiceToPodAnnotation(label string) bool {
 	switch label {
 	case "traffic.request.timeout":
 		fallthrough
@@ -52,9 +53,9 @@ func NeedServiceToPodAnnotation(label string, headless bool) bool {
 	case "traffic.fault.abort.percentage":
 		fallthrough
 	case "traffic.rate.limit":
-		return headless
+		fallthrough
 	case "traffic.tracing.enabled":
-		return true
+		fallthrough
 	case "traffic.tracing.sampling":
 		return true
 	default:
@@ -108,8 +109,12 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 		}
 	}
 }
-func (info *HttpListenerConfigInfo) ConfigRouteAction(routeAction *route.RouteAction) {
-
+func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []string) route.VirtualHost {
+	routeAction := &route.RouteAction{
+		ClusterSpecifier: &route.RouteAction_Cluster{
+			Cluster: cluster,
+		},
+	}
 	if info.HashCookieName != "" {
 		cookie := &route.RouteAction_HashPolicy_Cookie{
 			Name: info.HashCookieName,
@@ -141,6 +146,20 @@ func (info *HttpListenerConfigInfo) ConfigRouteAction(routeAction *route.RouteAc
 	}
 	if info.RequestTimeout > 0 {
 		routeAction.Timeout = &info.RequestTimeout
+	}
+	return route.VirtualHost{
+		Name:    fmt.Sprintf("%s_vh", cluster),
+		Domains: domains,
+		Routes: []route.Route{{
+			Match: route.RouteMatch{
+				PathSpecifier: &route.RouteMatch_Prefix{
+					Prefix: "/",
+				},
+			},
+			Action: &route.Route_Route{
+				Route: routeAction,
+			},
+		}},
 	}
 }
 func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpConnectionManager, ingress bool) {

@@ -17,7 +17,7 @@ func NewDeploymentToPodAnnotator(k8sManager *kubernetes.K8sResourceManager) *Dep
 }
 
 func (annotator *DeploymentToPodAnnotator) PodValid(pod *kubernetes.PodInfo) bool {
-	return true
+	return pod.Valid()
 }
 
 func (annotator *DeploymentToPodAnnotator) removeDeploymentAnnotateToPod(pod *kubernetes.PodInfo, deployment *kubernetes.DeploymentInfo) {

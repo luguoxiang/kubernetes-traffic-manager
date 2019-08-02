@@ -16,7 +16,7 @@ type ClusterConfigInfo struct {
 	ConnectionTimeout  time.Duration
 }
 
-func NeedServiceToPodAnnotation(label string, headless bool) bool {
+func NeedServiceToPodAnnotation(label string) bool {
 	switch label {
 	case "traffic.connection.timeout":
 		fallthrough
@@ -27,7 +27,7 @@ func NeedServiceToPodAnnotation(label string, headless bool) bool {
 	case "traffic.request.max-pending":
 		fallthrough
 	case "traffic.request.max":
-		return headless
+		return true
 	default:
 		return false
 	}

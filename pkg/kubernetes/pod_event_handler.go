@@ -16,7 +16,7 @@ type PodEventHandler interface {
 }
 
 func (manager *K8sResourceManager) PodValid(info *PodInfo) bool {
-	return !info.HostNetwork
+	return info.Valid()
 }
 
 func (manager *K8sResourceManager) PodAdded(info *PodInfo) {

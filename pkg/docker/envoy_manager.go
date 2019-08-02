@@ -118,8 +118,7 @@ func (manager *EnvoyManager) checkEnvoy(podInfo *kubernetes.PodInfo) {
 }
 
 func (manager *EnvoyManager) PodValid(pod *kubernetes.PodInfo) bool {
-	//Hostnetwork pod should not have envoy enabled
-	return !pod.HostNetwork
+	return pod.Valid()
 }
 
 func (manager *EnvoyManager) PodAdded(pod *kubernetes.PodInfo) {
