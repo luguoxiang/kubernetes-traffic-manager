@@ -12,6 +12,7 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/endpoint"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener/ingress"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"google.golang.org/grpc"
 	"net"
@@ -53,11 +54,12 @@ func main() {
 	cds := cluster.NewClustersControlPlaneService(k8sManager)
 	eds := endpoint.NewEndpointsControlPlaneService(k8sManager)
 	lds := listener.NewListenersControlPlaneService(k8sManager)
+	ilds := ingress.NewIngressListenersControlPlaneService(k8sManager)
 
 	serviceToPodAnnotator := annotation.NewServiceToPodAnnotator(k8sManager)
 	deploymentToPodAnnotator := annotation.NewDeploymentToPodAnnotator(k8sManager)
 
-	ads := envoy.NewAggregatedDiscoveryService(cds, eds, lds)
+	ads := envoy.NewAggregatedDiscoveryService(cds, eds, lds, ilds)
 
 	discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, ads)
 
@@ -68,6 +70,8 @@ func main() {
 	go k8sManager.WatchDeployments(stopper, k8sManager, deploymentToPodAnnotator)
 	go k8sManager.WatchStatefulSets(stopper, k8sManager, deploymentToPodAnnotator)
 	go k8sManager.WatchDaemonSets(stopper, k8sManager, deploymentToPodAnnotator)
+
+	go k8sManager.WatchIngresss(stopper, ilds)
 
 	glog.Infof("grpc server listening %s, version=%s", grpcPort, BuildVersion)
 	go func() {

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-ingress
+  labels:
+    app: traffic-ingress
+spec:
+  type: LoadBalancer
+  ports:
+  - name: ingress
+    targetPort: {{ .Values.port.envoyProxy }}
+    port: 80
+  - name: ingress-tls
+    targetPort: {{ .Values.port.envoyProxy }}
+    port: 443
+  selector:
+    app: traffic-ingress

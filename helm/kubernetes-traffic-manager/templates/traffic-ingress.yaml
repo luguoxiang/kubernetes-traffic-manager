@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: traffic-ingress
+  name: traffic-ingress
+spec:
+  selector:
+    matchLabels:
+      app: traffic-ingress
+  template:
+    metadata:
+      labels:
+        app: traffic-ingress
+    spec:
+      containers:
+      - image: "{{ .Values.images.envoyProxy }}"
+        imagePullPolicy: Always
+        name: traffic-ingress
+        env:
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CONTROL_PLANE_PORT
+          value: {{ .Values.port.trafficControl | quote }}
+        - name: CONTROL_PLANE_SERVICE
+          value: "traffic-control"
+        - name: PROXY_PORT
+          value: {{ .Values.port.envoyProxy | quote }}
+        - name: PROXY_MANAGE_PORT
+          value: {{ .Values.port.envoyAdmin | quote }}
+        - name: ZIPKIN_SERVICE
+          value: "traffic-zipkin"
+        - name: ZIPKIN_PORT
+          value: {{ .Values.port.trafficZipkin | quote }}
+        - name: NODE_ID
+          value: "traffic-ingress"
+        - name: SERVICE_CLUSTER
+          value: "traffic-ingress"
+        ports:
+        - containerPort: {{ .Values.port.envoyProxy }}
+          protocol: TCP
+        - containerPort: {{ .Values.port.envoyAdmin }}
+          protocol: TCP
+

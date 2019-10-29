@@ -9,6 +9,7 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/endpoint"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener/ingress"
 	"strings"
 	"time"
 )
@@ -19,16 +20,18 @@ const (
 )
 
 type AggregatedDiscoveryService struct {
-	cds *cluster.ClustersControlPlaneService
-	eds *endpoint.EndpointsControlPlaneService
-	lds *listener.ListenersControlPlaneService
+	cds  *cluster.ClustersControlPlaneService
+	eds  *endpoint.EndpointsControlPlaneService
+	lds  *listener.ListenersControlPlaneService
+	ilds *ingress.IngressListenersControlPlaneService
 }
 
 func NewAggregatedDiscoveryService(cds *cluster.ClustersControlPlaneService,
 	eds *endpoint.EndpointsControlPlaneService,
-	lds *listener.ListenersControlPlaneService) *AggregatedDiscoveryService {
+	lds *listener.ListenersControlPlaneService,
+	ilds *ingress.IngressListenersControlPlaneService) *AggregatedDiscoveryService {
 	return &AggregatedDiscoveryService{
-		cds: cds, eds: eds, lds: lds,
+		cds: cds, eds: eds, lds: lds, ilds: ilds,
 	}
 }
 func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
@@ -40,7 +43,11 @@ func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) 
 	case common.ListenerResource:
 		//always request all resources
 		req.ResourceNames = nil
-		return ads.lds.ProcessRequest(req, ads.lds.BuildResource)
+		if req.Node.Id == IngressNodeId {
+			return ads.ilds.ProcessRequest(req, ads.ilds.BuildResource)
+		} else {
+			return ads.lds.ProcessRequest(req, ads.lds.BuildResource)
+		}
 	//case common.RouteResource:
 	//case common.SecretResource:
 	default:

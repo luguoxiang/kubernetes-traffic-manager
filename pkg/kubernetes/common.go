@@ -13,6 +13,7 @@ const (
 	SERVICE_TYPE    ResourceType = 1
 	DEPLOYMENT_TYPE ResourceType = 2
 	POD_TYPE        ResourceType = 3
+	INGRESS_TYPE    ResourceType = 4
 
 	ENVOY_ENABLED = "traffic.envoy.enabled"
 

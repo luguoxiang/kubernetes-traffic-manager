@@ -34,6 +34,7 @@ func GetRESTClientMap(clientSet kubernetes.Interface) map[string]cache.Getter {
 		"deployments":  clientSet.ExtensionsV1beta1().RESTClient(),
 		"statefulsets": clientSet.AppsV1beta1().RESTClient(),
 		"daemonsets":   clientSet.ExtensionsV1beta1().RESTClient(),
+		"ingresses":    clientSet.ExtensionsV1beta1().RESTClient(),
 	}
 }
 
