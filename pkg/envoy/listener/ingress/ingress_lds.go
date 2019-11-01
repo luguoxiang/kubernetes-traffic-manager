@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -15,6 +16,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+)
+
+const (
+	INGRESS_PORT_ANNOTATION = "traffic.ingress.port."
 )
 
 type IngressListenerInfo interface {
@@ -49,36 +54,108 @@ func (cps *IngressListenersControlPlaneService) IngressValid(ingressInfo *kubern
 	return true
 }
 
-func getClusterName(svc string, ns string, port uint32) string {
+func getNameAndNamespace(svc string, ns string) (string, string) {
 
 	tokens := strings.Split(svc, ".")
 	if len(tokens) > 1 {
 		svc = tokens[0]
 		ns = tokens[1]
 	}
-	return cluster.ServiceClusterName(svc, ns, port)
+	return svc, ns
 }
 
 func (cps *IngressListenersControlPlaneService) IngressAdded(ingressInfo *kubernetes.IngressInfo) {
 	for host, pathMap := range ingressInfo.HostPathToClusterMap {
-		info := NewIngressHttpInfo(host)
 		for path, clusterInfo := range pathMap {
-			cluster := getClusterName(clusterInfo.Service, ingressInfo.Namespace(), clusterInfo.Port)
-			info.PathClusterMap[path] = cluster
+			svc, ns := getNameAndNamespace(clusterInfo.Service, ingressInfo.Namespace())
+			if path == "" {
+				path = "/"
+			}
+			if host == "*" || host == "" {
+				cps.GetK8sManager().MergeServiceAnnotation(svc, ns, fmt.Sprintf("%s%d", INGRESS_PORT_ANNOTATION, clusterInfo.Port), path)
+			} else {
+				cps.GetK8sManager().MergeServiceAnnotation(svc, ns, fmt.Sprintf("%s%d.host.%s", INGRESS_PORT_ANNOTATION, clusterInfo.Port, host), path)
+			}
 		}
-		cps.UpdateResource(info, ingressInfo.ResourceVersion)
 	}
 }
 func (cps *IngressListenersControlPlaneService) IngressDeleted(ingressInfo *kubernetes.IngressInfo) {
-	for host, _ := range ingressInfo.HostPathToClusterMap {
-		info := NewIngressHttpInfo(host)
-		cps.UpdateResource(info, "")
+	for host, pathMap := range ingressInfo.HostPathToClusterMap {
+		for path, clusterInfo := range pathMap {
+			svc, ns := getNameAndNamespace(clusterInfo.Service, ingressInfo.Namespace())
+			if path == "" {
+				path = "/"
+			}
+			if host == "*" || host == "" {
+				cps.GetK8sManager().RemoveServiceAnnotation(svc, ns, fmt.Sprintf("%s%d", INGRESS_PORT_ANNOTATION, clusterInfo.Port), path)
+			} else {
+				cps.GetK8sManager().RemoveServiceAnnotation(svc, ns, fmt.Sprintf("%s%d.host.%s", INGRESS_PORT_ANNOTATION, clusterInfo.Port, host), path)
+			}
+		}
 	}
 }
 func (cps *IngressListenersControlPlaneService) IngressUpdated(oldIngress, newIngress *kubernetes.IngressInfo) {
 	cps.IngressDeleted(oldIngress)
 	cps.IngressAdded(newIngress)
 }
+
+func (cps *IngressListenersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo) bool {
+	return true
+}
+
+func (cps *IngressListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
+	for k, v := range svc.Annotations {
+		if !strings.HasPrefix(k, INGRESS_PORT_ANNOTATION) {
+			continue
+		}
+		k = k[len(INGRESS_PORT_ANNOTATION):]
+		tokens := strings.Split(k, ".")
+		port := kubernetes.GetLabelValueUInt32(tokens[0])
+		var host string
+		if len(tokens) == 1 {
+			host = "*"
+		} else {
+			host = strings.Join(tokens[2:], ".")
+		}
+		for _, path := range strings.Split(v, ",") {
+			if path == "" {
+				continue
+			}
+			info := NewIngressHttpInfo(host, path, cluster.ServiceClusterName(svc.Name(), svc.Namespace(), port))
+			info.Config(svc.Labels)
+			cps.UpdateResource(info, svc.ResourceVersion)
+		}
+	}
+}
+
+func (cps *IngressListenersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
+	for k, v := range svc.Annotations {
+		if !strings.HasPrefix(k, INGRESS_PORT_ANNOTATION) {
+			continue
+		}
+		k = k[len(INGRESS_PORT_ANNOTATION):]
+		tokens := strings.Split(k, ".")
+		port := kubernetes.GetLabelValueUInt32(tokens[0])
+		var host string
+		if len(tokens) == 1 {
+			host = "*"
+		} else {
+			host = strings.Join(tokens[2:], ".")
+		}
+		for _, path := range strings.Split(v, ",") {
+			if path == "" {
+				continue
+			}
+			info := NewIngressHttpInfo(host, path, cluster.ServiceClusterName(svc.Name(), svc.Namespace(), port))
+			cps.UpdateResource(info, "")
+		}
+	}
+}
+func (cps *IngressListenersControlPlaneService) ServiceUpdated(oldService, newService *kubernetes.ServiceInfo) {
+	cps.ServiceDeleted(oldService)
+	cps.ServiceAdded(newService)
+}
+
 func (cps *IngressListenersControlPlaneService) CreateHttpFilterChain(virtualHosts []route.VirtualHost) listener.FilterChain {
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.AUTO,
@@ -114,11 +191,50 @@ func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[st
 
 	var virtualHosts []route.VirtualHost
 
+	infoMap := make(map[string]map[string]*IngressHttpInfo)
 	for _, resource := range resourceMap {
 		v := resource.(*IngressHttpInfo)
-		virtualHosts = append(virtualHosts, v.CreateVirtualHost())
+
+		pathMap := infoMap[v.Host]
+		if pathMap == nil {
+			infoMap[v.Host] = map[string]*IngressHttpInfo{
+				v.Path: v,
+			}
+		} else {
+			pathMap[v.Path] = v
+		}
+
 	}
 
+	for host, pathMap := range infoMap {
+		var name string
+		if host == "*" {
+			name = "all_ingress_vh"
+		} else {
+			name = fmt.Sprintf("%s_ingress_vh", strings.Replace(host, ".", "_", -1))
+		}
+		var routes []route.Route
+
+		for pathPrefix, info := range pathMap {
+			routeAction := info.CreateRouteAction(info.Cluster)
+			routes = append(routes, route.Route{
+				Match: route.RouteMatch{
+					PathSpecifier: &route.RouteMatch_Prefix{
+						Prefix: pathPrefix,
+					},
+				},
+				Action: &route.Route_Route{
+					Route: routeAction,
+				},
+			})
+		}
+
+		virtualHosts = append(virtualHosts, route.VirtualHost{
+			Name:    name,
+			Domains: []string{host},
+			Routes:  routes,
+		})
+	}
 	var filterChains []listener.FilterChain
 
 	if len(virtualHosts) > 0 {

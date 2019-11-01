@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"time"
 )
 
@@ -106,6 +107,71 @@ func (manager *K8sResourceManager) AddServiceLabel(serviceInfo *ServiceInfo, key
 		rawService.Labels[key] = value
 
 		_, err = manager.ClientSet.CoreV1().Services(serviceInfo.Namespace()).Update(rawService)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return err
+}
+
+func (manager *K8sResourceManager) MergeServiceAnnotation(name string, ns string, key string, value string) error {
+	var err error
+	var rawService *v1.Service
+	for i := 0; i < 3; i++ {
+		rawService, err = manager.ClientSet.CoreV1().Services(ns).Get(name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if rawService.Annotations == nil || rawService.Annotations[key] == "" {
+			rawService.Annotations = map[string]string{key: value}
+		} else {
+			items := strings.Split(rawService.Annotations[key], ",")
+			for _, item := range items {
+				if item == value {
+					return nil
+				}
+			}
+			items = append(items, value)
+
+			rawService.Annotations[key] = strings.Join(items, ",")
+		}
+		_, err = manager.ClientSet.CoreV1().Services(ns).Update(rawService)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return err
+}
+
+func (manager *K8sResourceManager) RemoveServiceAnnotation(name string, ns string, key string, value string) error {
+	var err error
+	var rawService *v1.Service
+	for i := 0; i < 3; i++ {
+		rawService, err = manager.ClientSet.CoreV1().Services(ns).Get(name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if rawService.Annotations == nil {
+			return nil
+		} else {
+			var changed bool
+			var result []string
+			for _, item := range strings.Split(rawService.Annotations[key], ",") {
+				if item == value {
+					changed = true
+					continue
+				}
+				result = append(result, item)
+			}
+
+			if !changed {
+				return nil
+			}
+			rawService.Annotations[key] = strings.Join(result, ",")
+		}
+		_, err = manager.ClientSet.CoreV1().Services(ns).Update(rawService)
 		if err == nil {
 			return nil
 		}

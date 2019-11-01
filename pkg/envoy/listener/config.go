@@ -109,7 +109,8 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 		}
 	}
 }
-func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []string) route.VirtualHost {
+
+func (info *HttpListenerConfigInfo) CreateRouteAction(cluster string) *route.RouteAction {
 	routeAction := &route.RouteAction{
 		ClusterSpecifier: &route.RouteAction_Cluster{
 			Cluster: cluster,
@@ -147,6 +148,10 @@ func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []
 	if info.RequestTimeout > 0 {
 		routeAction.Timeout = &info.RequestTimeout
 	}
+	return routeAction
+}
+
+func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []string) route.VirtualHost {
 	return route.VirtualHost{
 		Name:    fmt.Sprintf("%s_vh", cluster),
 		Domains: domains,
@@ -157,11 +162,12 @@ func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []
 				},
 			},
 			Action: &route.Route_Route{
-				Route: routeAction,
+				Route: info.CreateRouteAction(cluster),
 			},
 		}},
 	}
 }
+
 func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpConnectionManager, ingress bool) {
 
 	if info.Tracing {
