@@ -91,7 +91,7 @@ func (cps *ClustersControlPlaneService) PodDeleted(pod *kubernetes.PodInfo) {
 func (cps *ClustersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.PodInfo) {
 	visited := make(map[string]bool)
 	if newPod != nil {
-		for port, config := range newPod.GetPortConfig() {
+		for port, config := range newPod.GetTargetPortConfig() {
 			cluster := NewStaticClusterInfo(common.LOCALHOST, port, "")
 			cps.UpdateResource(cluster, "1")
 
@@ -105,7 +105,7 @@ func (cps *ClustersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.Po
 	}
 
 	if oldPod != nil {
-		for port, _ := range oldPod.GetPortSet() {
+		for port, _ := range oldPod.GetTargetPortConfig() {
 			cluster := NewStaticClusterInfo(oldPod.PodIP, port, oldPod.NodeId())
 			if !visited[cluster.Name()] {
 				cps.UpdateResource(cluster, "")

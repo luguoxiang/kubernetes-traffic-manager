@@ -56,6 +56,9 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 		if protocol != "" {
 			key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
 			annotations[key] = protocol
+
+			key = kubernetes.PodTargetPortProtcolByService(svc.Name(), port.TargetPort)
+			annotations[key] = protocol
 		}
 
 	}

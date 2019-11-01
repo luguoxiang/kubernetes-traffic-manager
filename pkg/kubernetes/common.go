@@ -100,6 +100,10 @@ func PodPortProtcolByService(svc string, port uint32) string {
 	return fmt.Sprintf("%s%s.port.%d", POD_SERVICE_PREFIX, svc, port)
 }
 
+func PodTargetPortProtcolByService(svc string, port uint32) string {
+	return fmt.Sprintf("%s%s.target.port.%d", POD_SERVICE_PREFIX, svc, port)
+}
+
 func podKeyByService(svc string, key string) string {
 	return fmt.Sprintf("%s%s.%s", POD_SERVICE_PREFIX, svc, key)
 }

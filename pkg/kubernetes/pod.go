@@ -104,17 +104,17 @@ func (pod *PodInfo) GetPortSet() map[uint32]map[string]bool {
 	return result
 }
 
-func (pod *PodInfo) collectPort(configMap map[string]string, result map[uint32]*PodPortInfo) {
+func (pod *PodInfo) collectTargetPort(configMap map[string]string, result map[uint32]*PodPortInfo) {
 	for k, v := range configMap {
 		tokens := strings.Split(k, ".")
-		if len(tokens) != 3 || tokens[0] != "traffic" || tokens[1] != "port" {
+		if len(tokens) != 4 || tokens[0] != "traffic" || tokens[1] != "target" || tokens[2] != "port" {
 			continue
 		}
 		protocol := GetProtocol(v)
 		if protocol < 0 {
 			continue
 		}
-		port := getPort(tokens[2])
+		port := getPort(tokens[3])
 		if port == 0 {
 			continue
 		}
@@ -146,7 +146,7 @@ func (pod *PodInfo) collectPort(configMap map[string]string, result map[uint32]*
 	}
 }
 
-func (pod *PodInfo) GetPortConfig() map[uint32]*PodPortInfo {
+func (pod *PodInfo) GetTargetPortConfig() map[uint32]*PodPortInfo {
 	serviceConfig := make(map[string]map[string]string)
 
 	for k, v := range pod.Annotations {
@@ -171,9 +171,9 @@ func (pod *PodInfo) GetPortConfig() map[uint32]*PodPortInfo {
 	result := make(map[uint32]*PodPortInfo)
 
 	for _, configMap := range serviceConfig {
-		pod.collectPort(configMap, result)
+		pod.collectTargetPort(configMap, result)
 	}
-	pod.collectPort(pod.Labels, result)
+	pod.collectTargetPort(pod.Labels, result)
 	return result
 }
 

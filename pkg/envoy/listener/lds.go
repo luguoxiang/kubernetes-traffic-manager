@@ -95,7 +95,7 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	visited := make(map[string]bool)
 
 	if newPod != nil {
-		for port, portInfo := range newPod.GetPortConfig() {
+		for port, portInfo := range newPod.GetTargetPortConfig() {
 			if portInfo.Protocol == kubernetes.PROTO_HTTP {
 				info := NewHttpPodIpFilterInfo(newPod, port)
 				info.Config(portInfo.ConfigMap)
@@ -110,7 +110,7 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 		}
 	}
 	if oldPod != nil {
-		for port, _ := range oldPod.GetPortSet() {
+		for port, _ := range oldPod.GetTargetPortConfig() {
 			info := NewPodIpFilterInfo(oldPod, port)
 			if visited[info.Name()] {
 				continue
