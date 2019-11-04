@@ -32,6 +32,8 @@ curl -v localhost/reviews/0
    You need to add traffic.port.(port number)=(protocol) labels for service or pod to unblock traffic on certain port.
    The protocol can be http or tcp or direct(bypass envoy load balancing). 
    
+   service in ingress configuration will be automatically annotated(not labeled) with http protocol, so no need to label them.
+   
    For example, following label wil let envoy enabled pods accessing kubernetes service
    ```
    kubectl label svc kubernetes traffic.port.443=direct
