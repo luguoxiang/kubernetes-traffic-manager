@@ -4,6 +4,13 @@ metadata:
   name: test-ingress
 spec:
   rules:
+  - host: productpage.com
+    http:
+      paths:
+      - path: /productpage
+        backend:
+          serviceName: productpage
+          servicePort: 9080          
   - http:
       paths:
       - path: /reviews
@@ -14,10 +21,6 @@ spec:
         backend:
           serviceName: ratings
           servicePort: 9080
-      - path: /productpage
-        backend:
-          serviceName: productpage
-          servicePort: 9080          
       - path: /api/v1
         backend:
           serviceName: traffic-prometheus

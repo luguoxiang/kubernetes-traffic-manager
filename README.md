@@ -22,6 +22,7 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/sampl
 kubectl apply -f samples/ingress.yaml
 
 # wait awhile then run
+curl -H "Host: productpage.com" localhost/productpage
 curl -v localhost/reviews/0
 
 
