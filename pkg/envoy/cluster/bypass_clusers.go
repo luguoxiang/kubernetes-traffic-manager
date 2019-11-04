@@ -56,6 +56,6 @@ func (info *ByPassClusterInfo) CreateCluster() *v2.Cluster {
 		},
 	}
 
-	info.ApplyClusterConfig(result, false)
+	info.ApplyClusterConfig(result)
 	return result
 }

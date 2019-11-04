@@ -92,10 +92,7 @@ func (cps *ClustersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.Po
 	visited := make(map[string]bool)
 	if newPod != nil {
 		for port, config := range newPod.GetTargetPortConfig() {
-			cluster := NewStaticClusterInfo(common.LOCALHOST, port, "")
-			cps.UpdateResource(cluster, "1")
-
-			cluster = NewStaticClusterInfo(newPod.PodIP, port, newPod.NodeId())
+			cluster := NewStaticClusterInfo(newPod.PodIP, port, newPod.NodeId())
 
 			visited[cluster.Name()] = true
 			cluster.Config(config.ConfigMap)

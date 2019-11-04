@@ -78,7 +78,7 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 			},
 		},
 	}
-	info.ConfigConnectionManager(manager, node.Id == info.node)
+	info.ConfigConnectionManager(manager)
 
 	manager.HttpFilters = append(manager.HttpFilters, &hcm.HttpFilter{
 		Name: common.RouterHttpFilter,

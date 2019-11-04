@@ -150,7 +150,7 @@ func (client *DockerClient) CreateDockerInstance(podInfo *kubernetes.PodInfo) (s
 		fmt.Sprintf("PROXY_UID=%s", client.ProxyUID),
 		fmt.Sprintf("ZIPKIN_SERVICE=%s", client.ZipkinService),
 		fmt.Sprintf("ZIPKIN_PORT=%s", client.ZipkinPort),
-
+		"DISABLE_INBOUNT_IPTABLE=true",
 		////used for envoy's --service-cluster option
 		fmt.Sprintf("SERVICE_CLUSTER=%s.%s", podInfo.Name(), podInfo.Namespace()),
 		fmt.Sprintf("NODE_ID=%s.%s", podInfo.Name(), podInfo.Namespace()),

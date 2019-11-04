@@ -14,8 +14,6 @@ const (
 	TLS_INSPECTOR         = "envoy.listener.tls_inspector"
 	ORIGINAL_DST          = "envoy.listener.original_dst"
 	HttpFaultInjection    = "envoy.fault"
-
-	LOCALHOST = "127.0.0.1"
 )
 
 var (

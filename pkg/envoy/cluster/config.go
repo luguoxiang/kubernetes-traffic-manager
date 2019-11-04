@@ -55,10 +55,7 @@ func (info *ClusterConfigInfo) Config(config map[string]string) {
 	}
 }
 
-func (info *ClusterConfigInfo) ApplyClusterConfig(clusterInfo *v2.Cluster, ingress bool) {
-	if ingress {
-		return
-	}
+func (info *ClusterConfigInfo) ApplyClusterConfig(clusterInfo *v2.Cluster) {
 	var threshold cluster.CircuitBreakers_Thresholds
 	var hasCircuitBreaker bool
 	if info.MaxConnections > 0 {

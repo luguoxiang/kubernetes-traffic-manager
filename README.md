@@ -80,14 +80,14 @@ curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_cluster_outb
 curl -v http://localhost/reviews/0
 
 # The value of reviews-v1 and reviews-v2 should be about 10:1
-curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2', instance='review-v1 or review-v2 pod ip}:8900'}"|jq
+curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2', instance='(review-v1 or review-v2 pod ip):8900'}"|jq
 
 # Use cookie hash policy
 kubectl label svc reviews traffic.lb.policy=RING_HASH
 kubectl label svc reviews traffic.hash.cookie.name="mycookie"
 kubectl label svc reviews traffic.hash.cookie.ttl="100000"
 
-# delete review-v1 and review-v2 pods to avoid http request being cached
+kubectl label deployment reviews-v3 traffic.endpoint.weight=20
 
 curl -v  http://localhost/reviews/0
 # The http response should contains set-cookie, for example:
@@ -209,7 +209,6 @@ node id is pod name and pod namespace
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
 | Pod, Deployment, StatefulSet, DaemonSet | traffic.envoy.enabled | false | whether to enable envoy docker for related pods|
-| Pod | traffic.envoy.local.use_podip | false | whether to let envoy access local pod using pod ip instead of 127.0.0.1 |
 | Pod, Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
 | Pod, Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
 | Pod, Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 

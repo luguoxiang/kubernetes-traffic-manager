@@ -67,6 +67,6 @@ func (info *ServiceClusterInfo) CreateCluster() *v2.Cluster {
 		},
 		LbPolicy: v2.Cluster_LbPolicy(info.LbPolicy),
 	}
-	info.ApplyClusterConfig(result, false)
+	info.ApplyClusterConfig(result)
 	return result
 }

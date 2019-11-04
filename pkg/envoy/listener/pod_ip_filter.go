@@ -14,18 +14,16 @@ import (
 
 //listener filter for local pod or outbound listener filter for headless service pod
 type PodIpFilterInfo struct {
-	podIP            string
-	node             string
-	port             uint32
-	LocalAccessPodIP bool
+	podIP string
+	node  string
+	port  uint32
 }
 
 func NewPodIpFilterInfo(pod *kubernetes.PodInfo, port uint32) *PodIpFilterInfo {
 	return &PodIpFilterInfo{
-		port:             port,
-		podIP:            pod.PodIP,
-		LocalAccessPodIP: kubernetes.GetLabelValueBool(pod.Labels[kubernetes.LOCAL_ACCESS_POD_IP]),
-		node:             fmt.Sprintf("%s.%s", pod.Name(), pod.Namespace()),
+		port:  port,
+		podIP: pod.PodIP,
+		node:  fmt.Sprintf("%s.%s", pod.Name(), pod.Namespace()),
 	}
 }
 
@@ -42,15 +40,7 @@ func (info *PodIpFilterInfo) Name() string {
 }
 
 func (info *PodIpFilterInfo) getStaticClusterName(nodeId string) string {
-	if nodeId == info.node {
-		if info.LocalAccessPodIP {
-			return cluster.StaticClusterName(info.podIP, info.port)
-		}
-		//use local loop interface to access local workload
-		return cluster.StaticClusterName(common.LOCALHOST, info.port)
-	} else {
-		return cluster.StaticClusterName(info.podIP, info.port)
-	}
+	return cluster.StaticClusterName(info.podIP, info.port)
 }
 
 func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {

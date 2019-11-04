@@ -76,7 +76,7 @@ func (info *StaticClusterInfo) CreateCluster() *v2.Cluster {
 		},
 	}
 
-	info.ApplyClusterConfig(result, info.IP == common.LOCALHOST)
+	info.ApplyClusterConfig(result)
 
 	return result
 }

@@ -168,27 +168,17 @@ func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []
 	}
 }
 
-func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpConnectionManager, ingress bool) {
+func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpConnectionManager) {
 
 	if info.Tracing {
-		if ingress {
-			//local inbound tracing
-			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
-				OperationName: hcm.INGRESS,
-			}
-		} else {
-			manager.Tracing = &hcm.HttpConnectionManager_Tracing{
-				OperationName: hcm.EGRESS,
-			}
+		manager.Tracing = &hcm.HttpConnectionManager_Tracing{
+			OperationName: hcm.EGRESS,
 		}
 		manager.Tracing.OverallSampling = &_type.Percent{
 			Value: info.TraceSamplingPercent,
 		}
 	}
-	//headless service will use pod ip egress filter's config, ingress side do not need config
-	if ingress {
-		return
-	}
+
 	faultConfig := &httpfault.HTTPFault{}
 	changed := false
 	if info.FaultInjectionFixDelayPercentage > 0 {

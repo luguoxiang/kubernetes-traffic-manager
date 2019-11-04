@@ -49,7 +49,7 @@ func (info *HttpClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listene
 			RouteConfig: routeConfig,
 		},
 	}
-	info.ConfigConnectionManager(manager, false)
+	info.ConfigConnectionManager(manager)
 
 	manager.HttpFilters = append(manager.HttpFilters, &hcm.HttpFilter{
 		Name: common.RouterHttpFilter,
