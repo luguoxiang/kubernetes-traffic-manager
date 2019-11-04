@@ -29,7 +29,7 @@ curl -v localhost/reviews/0
 # Required labels
    When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
    
-   By default, all envoy enabled pods' incoming and outcoming traffic will be blocked. 
+   By default, all envoy enabled pods' outcoming traffic will be blocked. 
    You need to add traffic.port.(port number)=(protocol) labels for service or pod to unblock traffic on certain port.
    The protocol can be http or tcp or direct(bypass envoy load balancing). 
    
@@ -225,7 +225,7 @@ Responsible to start/stop envoy container for traffic-control
 When a pod is envoy enabled, envoy-manager will start a envoy docker instance:
 * Envoy docker git repo: https://github.com/luguoxiang/traffic-envoy
 * The docker instance will share corresponding pod's network(docker container network mode).
-* The iptable config of the pod network will be changed to redirect all incoming and outcoming traffic to envoy container listen port.
+* The iptable config of the pod network will be changed to redirect all outcoming traffic to envoy container listen port.
 * The pod will be annotated with traffic.envoy.proxy=(docker id)
 
 When user label the service with "traffic.envoy.enabled=false"
