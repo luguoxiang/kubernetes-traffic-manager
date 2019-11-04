@@ -6,7 +6,6 @@ metadata:
     app: traffic-prometheus
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: {{ .Release.Name }}
-    traffic.port.{{ .Values.port.prometheusPort }}: http
 spec:
   type: ClusterIP
   selector:

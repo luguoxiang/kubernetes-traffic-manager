@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         app: traffic-ingress
+      annotations:
+        traffic.envoy.proxy: ingress
     spec:
       containers:
       - image: "{{ .Values.images.envoyProxy }}"

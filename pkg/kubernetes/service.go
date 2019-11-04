@@ -31,7 +31,12 @@ func (service *ServiceInfo) Type() ResourceType {
 
 func (service *ServiceInfo) Protocol(port uint32) int {
 	key := ServicePortProtocol(port)
-	return GetProtocol(service.Labels[key])
+	proto := GetProtocol(service.Labels[key])
+	if proto < 0 {
+		//annotated by ingress_lds
+		proto = GetProtocol(service.Annotations[key])
+	}
+	return proto
 }
 
 func (service *ServiceInfo) Name() string {
@@ -115,7 +120,44 @@ func (manager *K8sResourceManager) AddServiceLabel(serviceInfo *ServiceInfo, key
 	return err
 }
 
-func (manager *K8sResourceManager) MergeServiceAnnotation(name string, ns string, key string, value string) error {
+func mergeValue(oldValue string, value string) (string, bool) {
+	if oldValue == "" {
+		return value, value != oldValue
+	}
+	items := strings.Split(oldValue, ",")
+	for _, item := range items {
+		if item == value {
+			return oldValue, false
+		}
+	}
+	items = append(items, value)
+
+	return strings.Join(items, ","), true
+
+}
+
+func removeValue(oldValue string, value string) (string, bool) {
+	if oldValue == "" {
+		return "", false
+	}
+	var changed bool
+	items := strings.Split(oldValue, ",")
+	var result []string
+	for _, item := range items {
+		if item == value {
+			changed = true
+			continue
+		}
+		result = append(result, value)
+	}
+	if !changed {
+		return oldValue, false
+	}
+	return strings.Join(result, ","), true
+
+}
+
+func (manager *K8sResourceManager) MergeServiceAnnotation(name string, ns string, values map[string]string) error {
 	var err error
 	var rawService *v1.Service
 	for i := 0; i < 3; i++ {
@@ -123,19 +165,22 @@ func (manager *K8sResourceManager) MergeServiceAnnotation(name string, ns string
 		if err != nil {
 			return err
 		}
-		if rawService.Annotations == nil || rawService.Annotations[key] == "" {
-			rawService.Annotations = map[string]string{key: value}
+		if rawService.Annotations == nil {
+			rawService.Annotations = values
 		} else {
-			items := strings.Split(rawService.Annotations[key], ",")
-			for _, item := range items {
-				if item == value {
-					return nil
+			var hasChange bool
+			for key, value := range values {
+				var changed bool
+				rawService.Annotations[key], changed = mergeValue(rawService.Annotations[key], value)
+				if changed {
+					hasChange = true
 				}
 			}
-			items = append(items, value)
-
-			rawService.Annotations[key] = strings.Join(items, ",")
+			if !hasChange {
+				return nil
+			}
 		}
+
 		_, err = manager.ClientSet.CoreV1().Services(ns).Update(rawService)
 		if err == nil {
 			return nil
@@ -145,7 +190,7 @@ func (manager *K8sResourceManager) MergeServiceAnnotation(name string, ns string
 	return err
 }
 
-func (manager *K8sResourceManager) RemoveServiceAnnotation(name string, ns string, key string, value string) error {
+func (manager *K8sResourceManager) RemoveServiceAnnotation(name string, ns string, values map[string]string) error {
 	var err error
 	var rawService *v1.Service
 	for i := 0; i < 3; i++ {
@@ -155,22 +200,20 @@ func (manager *K8sResourceManager) RemoveServiceAnnotation(name string, ns strin
 		}
 		if rawService.Annotations == nil {
 			return nil
-		} else {
-			var changed bool
-			var result []string
-			for _, item := range strings.Split(rawService.Annotations[key], ",") {
-				if item == value {
-					changed = true
-					continue
-				}
-				result = append(result, item)
-			}
-
-			if !changed {
-				return nil
-			}
-			rawService.Annotations[key] = strings.Join(result, ",")
 		}
+
+		var hasChange bool
+		for key, value := range values {
+			var changed bool
+			rawService.Annotations[key], changed = removeValue(rawService.Annotations[key], value)
+			if changed {
+				hasChange = true
+			}
+		}
+		if !hasChange {
+			return nil
+		}
+
 		_, err = manager.ClientSet.CoreV1().Services(ns).Update(rawService)
 		if err == nil {
 			return nil

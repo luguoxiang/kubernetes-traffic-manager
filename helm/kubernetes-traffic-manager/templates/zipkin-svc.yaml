@@ -6,7 +6,6 @@ metadata:
     app: traffic-zipkin
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: {{ .Release.Name }}
-    traffic.port.{{ .Values.port.trafficZipkin }}: http
 spec:
   type: ClusterIP
   selector:

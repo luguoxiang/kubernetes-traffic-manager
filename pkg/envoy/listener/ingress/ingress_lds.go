@@ -71,10 +71,17 @@ func (cps *IngressListenersControlPlaneService) IngressAdded(ingressInfo *kubern
 			if path == "" {
 				path = "/"
 			}
+			protoKey := kubernetes.ServicePortProtocol(clusterInfo.Port)
 			if host == "*" || host == "" {
-				cps.GetK8sManager().MergeServiceAnnotation(svc, ns, fmt.Sprintf("%s%d", INGRESS_PORT_ANNOTATION, clusterInfo.Port), path)
+				cps.GetK8sManager().MergeServiceAnnotation(svc, ns, map[string]string{
+					fmt.Sprintf("%s%d", INGRESS_PORT_ANNOTATION, clusterInfo.Port): path,
+					protoKey: "http",
+				})
 			} else {
-				cps.GetK8sManager().MergeServiceAnnotation(svc, ns, fmt.Sprintf("%s%d.host.%s", INGRESS_PORT_ANNOTATION, clusterInfo.Port, host), path)
+				cps.GetK8sManager().MergeServiceAnnotation(svc, ns, map[string]string{
+					fmt.Sprintf("%s%d.host.%s", INGRESS_PORT_ANNOTATION, clusterInfo.Port, host): path,
+					protoKey: "http",
+				})
 			}
 		}
 	}
@@ -86,10 +93,18 @@ func (cps *IngressListenersControlPlaneService) IngressDeleted(ingressInfo *kube
 			if path == "" {
 				path = "/"
 			}
+			protoKey := kubernetes.ServicePortProtocol(clusterInfo.Port)
 			if host == "*" || host == "" {
-				cps.GetK8sManager().RemoveServiceAnnotation(svc, ns, fmt.Sprintf("%s%d", INGRESS_PORT_ANNOTATION, clusterInfo.Port), path)
+				cps.GetK8sManager().RemoveServiceAnnotation(svc, ns,
+					map[string]string{
+						protoKey: "http",
+						fmt.Sprintf("%s%d", INGRESS_PORT_ANNOTATION, clusterInfo.Port): path,
+					})
 			} else {
-				cps.GetK8sManager().RemoveServiceAnnotation(svc, ns, fmt.Sprintf("%s%d.host.%s", INGRESS_PORT_ANNOTATION, clusterInfo.Port, host), path)
+				cps.GetK8sManager().RemoveServiceAnnotation(svc, ns, map[string]string{
+					protoKey: "http",
+					fmt.Sprintf("%s%d.host.%s", INGRESS_PORT_ANNOTATION, clusterInfo.Port, host): path,
+				})
 			}
 		}
 	}

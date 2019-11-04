@@ -8,6 +8,10 @@ import (
 	"sync"
 )
 
+const (
+	TRAFFIC_INGRESS_PROXY = "ingress"
+)
+
 type EnvoyManager struct {
 	dockerClient *DockerClient
 	k8sManager   *kubernetes.K8sResourceManager
@@ -78,6 +82,9 @@ func (manager *EnvoyManager) checkEnvoy(podInfo *kubernetes.PodInfo) {
 		return
 	}
 
+	if podInfo.Annotations[kubernetes.ENVOY_PROXY_ANNOTATION] == TRAFFIC_INGRESS_PROXY {
+		return
+	}
 	go func(envoyEnabled bool) {
 		//make all check run in serial
 		manager.envoyMutex.Lock()
