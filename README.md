@@ -112,6 +112,7 @@ Reference:
 | Pod, Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
 | Pod, Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
 
+Ingress does not support Fault Injection
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 
