@@ -21,7 +21,6 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/sampl
 kubectl apply -f samples/ingress.yaml
 
 # wait awhile then run
-curl -v localhost/productpage
 curl -v localhost/reviews/0
 
 
@@ -73,22 +72,20 @@ kubectl label deployment reviews-v3 traffic.endpoint.weight=0
 # The value should be 2, since reviews-v3 has weight 0
 curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_cluster_outbound_membership_total{envoy_cluster_name='9080|default|reviews'}"|jq
 
-# Required only for runtime metrics
-kubectl label deployment reviews-v1 traffic.envoy.enabled=true
-kubectl label deployment reviews-v2 traffic.envoy.enabled=true
-kubectl label deployment reviews-v3 traffic.envoy.enabled=true
 # repeat many times
 curl -v http://localhost/reviews/0
 
 # The value of reviews-v1 and reviews-v2 should be about 10:1
-curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2', instance='{ingress pod ip}:8900'}"|jq
+curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2', instance='review-v1 or review-v2 pod ip}:8900'}"|jq
 
 # Use cookie hash policy
 kubectl label svc reviews traffic.lb.policy=RING_HASH
 kubectl label svc reviews traffic.hash.cookie.name="mycookie"
 kubectl label svc reviews traffic.hash.cookie.ttl="100000"
 
-curl -v  -H 'Cache-Control: no-cache' http://localhost/reviews/0
+# delete review-v1 and review-v2 pods to avoid http request being cached
+
+curl -v  http://localhost/reviews/0
 # The http response should contains set-cookie, for example:
 # set-cookie: mycookie="3acd918773ba09c5"; Max-Age=100; HttpOnly
 
