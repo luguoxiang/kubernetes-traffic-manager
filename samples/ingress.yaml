@@ -3,6 +3,9 @@ kind: Ingress
 metadata:
   name: test-ingress
 spec:
+  backend:
+    serviceName: productpage
+    servicePort: 9080
   rules:
   - host: productpage.com
     http:

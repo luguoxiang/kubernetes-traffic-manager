@@ -5,6 +5,12 @@ import (
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
+type IngressHostInfo struct {
+	Host    string
+	PathMap map[string]*IngressClusterInfo
+	Secret  string
+}
+
 type IngressClusterInfo struct {
 	Service string
 	Port    uint32
@@ -15,36 +21,64 @@ type IngressInfo struct {
 	namespace       string
 	ResourceVersion string
 
-	DefaultCluster       *IngressClusterInfo
-	HostPathToClusterMap map[string]map[string]*IngressClusterInfo
+	HostPathToClusterMap map[string]*IngressHostInfo
 }
 
 func NewIngressInfo(ingress *v1beta1.Ingress) *IngressInfo {
-	hostPathToClusterMap := make(map[string]map[string]*IngressClusterInfo)
-	var defaultCluster *IngressClusterInfo
+	hostPathToClusterMap := map[string]*IngressHostInfo{
+		"*": &IngressHostInfo{
+			Host:    "*",
+			PathMap: map[string]*IngressClusterInfo{},
+		},
+	}
+
+	for _, rule := range ingress.Spec.Rules {
+		if rule.Host != "" {
+			hostPathToClusterMap[rule.Host] = &IngressHostInfo{
+				Host:    rule.Host,
+				PathMap: map[string]*IngressClusterInfo{},
+			}
+		}
+	}
 	if ingress.Spec.Backend != nil {
-		defaultCluster = &IngressClusterInfo{
+		defaultCluster := &IngressClusterInfo{
 			Service: ingress.Spec.Backend.ServiceName,
 			Port:    uint32(ingress.Spec.Backend.ServicePort.IntVal),
 		}
+		for _, hostInfo := range hostPathToClusterMap {
+			hostInfo.PathMap["/"] = defaultCluster
+		}
+	}
+
+	for _, tls := range ingress.Spec.TLS {
+		for _, host := range tls.Hosts {
+			hostInfo := hostPathToClusterMap[host]
+			if hostInfo != nil {
+				hostInfo.Secret = tls.SecretName
+			}
+		}
 	}
 	for _, rule := range ingress.Spec.Rules {
-		pathRule := make(map[string]*IngressClusterInfo)
+		host := rule.Host
+		if host == "" {
+			host = "*"
+		}
+		hostInfo := hostPathToClusterMap[host]
 
 		for _, cluster := range rule.HTTP.Paths {
-			pathRule[cluster.Path] = &IngressClusterInfo{
+			path := cluster.Path
+			if path == "" {
+				path = "/"
+			}
+			hostInfo.PathMap[path] = &IngressClusterInfo{
 				Service: cluster.Backend.ServiceName,
 				Port:    uint32(cluster.Backend.ServicePort.IntVal),
 			}
 		}
-		if rule.Host == "" {
-			hostPathToClusterMap["*"] = pathRule
-		} else {
-			hostPathToClusterMap[rule.Host] = pathRule
-		}
+
 	}
+
 	return &IngressInfo{
-		DefaultCluster:       defaultCluster,
 		HostPathToClusterMap: hostPathToClusterMap,
 		namespace:            ingress.Namespace,
 		name:                 ingress.Name,

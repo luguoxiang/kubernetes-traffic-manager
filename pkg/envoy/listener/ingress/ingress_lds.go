@@ -14,6 +14,7 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -65,14 +66,12 @@ func getNameAndNamespace(svc string, ns string) (string, string) {
 }
 
 func (cps *IngressListenersControlPlaneService) IngressAdded(ingressInfo *kubernetes.IngressInfo) {
-	for host, pathMap := range ingressInfo.HostPathToClusterMap {
-		for path, clusterInfo := range pathMap {
+	for host, hostInfo := range ingressInfo.HostPathToClusterMap {
+		for path, clusterInfo := range hostInfo.PathMap {
 			svc, ns := getNameAndNamespace(clusterInfo.Service, ingressInfo.Namespace())
-			if path == "" {
-				path = "/"
-			}
+
 			protoKey := kubernetes.ServicePortProtocol(clusterInfo.Port)
-			if host == "*" || host == "" {
+			if host == "*" {
 				cps.GetK8sManager().MergeServiceAnnotation(svc, ns, map[string]string{
 					fmt.Sprintf("%s%d", INGRESS_PORT_ANNOTATION, clusterInfo.Port): path,
 					protoKey: "http",
@@ -87,14 +86,12 @@ func (cps *IngressListenersControlPlaneService) IngressAdded(ingressInfo *kubern
 	}
 }
 func (cps *IngressListenersControlPlaneService) IngressDeleted(ingressInfo *kubernetes.IngressInfo) {
-	for host, pathMap := range ingressInfo.HostPathToClusterMap {
-		for path, clusterInfo := range pathMap {
+	for host, hostInfo := range ingressInfo.HostPathToClusterMap {
+		for path, clusterInfo := range hostInfo.PathMap {
 			svc, ns := getNameAndNamespace(clusterInfo.Service, ingressInfo.Namespace())
-			if path == "" {
-				path = "/"
-			}
+
 			protoKey := kubernetes.ServicePortProtocol(clusterInfo.Port)
-			if host == "*" || host == "" {
+			if host == "*" {
 				cps.GetK8sManager().RemoveServiceAnnotation(svc, ns,
 					map[string]string{
 						protoKey: "http",
@@ -202,53 +199,68 @@ func (cps *IngressListenersControlPlaneService) CreateHttpFilterChain(virtualHos
 		}},
 	}
 }
+
 func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 
 	var virtualHosts []route.VirtualHost
 
-	infoMap := make(map[string]map[string]*IngressHttpInfo)
+	var pathList []*IngressHttpInfo
+
 	for _, resource := range resourceMap {
 		v := resource.(*IngressHttpInfo)
 
-		pathMap := infoMap[v.Host]
-		if pathMap == nil {
-			infoMap[v.Host] = map[string]*IngressHttpInfo{
-				v.Path: v,
-			}
-		} else {
-			pathMap[v.Path] = v
-		}
+		pathList = append(pathList, v)
 
 	}
+	sort.SliceStable(pathList, func(i, j int) bool {
+		a := pathList[i]
+		b := pathList[j]
+		if a.Host != b.Host {
+			// * should be last
+			if a.Host == "*" {
+				return false
+			}
+			if b.Host == "*" {
+				return true
+			}
+			return a.Host > b.Host
+		}
+		return a.Path > b.Path
+	})
 
-	for host, pathMap := range infoMap {
+	var routes []route.Route
+	for index, info := range pathList {
+		if index > 0 && info.Path == pathList[index-1].Path && info.Host == pathList[index-1].Host {
+			continue
+		}
+		host := info.Host
 		var name string
 		if host == "*" {
 			name = "all_ingress_vh"
 		} else {
 			name = fmt.Sprintf("%s_ingress_vh", strings.Replace(host, ".", "_", -1))
 		}
-		var routes []route.Route
 
-		for pathPrefix, info := range pathMap {
-			routeAction := info.CreateRouteAction(info.Cluster)
-			routes = append(routes, route.Route{
-				Match: route.RouteMatch{
-					PathSpecifier: &route.RouteMatch_Prefix{
-						Prefix: pathPrefix,
-					},
+		routeAction := info.CreateRouteAction(info.Cluster)
+		routes = append(routes, route.Route{
+			Match: route.RouteMatch{
+				PathSpecifier: &route.RouteMatch_Prefix{
+					Prefix: info.Path,
 				},
-				Action: &route.Route_Route{
-					Route: routeAction,
-				},
+			},
+			Action: &route.Route_Route{
+				Route: routeAction,
+			},
+		})
+		if index == len(pathList)-1 || host != pathList[index+1].Host {
+			virtualHosts = append(virtualHosts, route.VirtualHost{
+				Name:    name,
+				Domains: []string{host},
+				Routes:  routes,
 			})
+			routes = nil
 		}
 
-		virtualHosts = append(virtualHosts, route.VirtualHost{
-			Name:    name,
-			Domains: []string{host},
-			Routes:  routes,
-		})
 	}
 	var filterChains []listener.FilterChain
 
