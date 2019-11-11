@@ -29,14 +29,16 @@ func (service *ServiceInfo) Type() ResourceType {
 	return SERVICE_TYPE
 }
 
-func (service *ServiceInfo) Protocol(port uint32) int {
-	key := ServicePortProtocol(port)
-	proto := GetProtocol(service.Labels[key])
-	if proto < 0 {
-		//annotated by ingress_lds
-		proto = GetProtocol(service.Annotations[key])
+func (service *ServiceInfo) IsIngressHttpPort(port uint32) bool {
+	label := IngressAttrLabel(port, "name")
+	return service.Annotations[label] != ""
+}
+func (svc *ServiceInfo) Protocol(port uint32) int {
+	if svc.IsIngressHttpPort(port) {
+		return PROTO_HTTP
 	}
-	return proto
+	key := ServicePortProtocol(port)
+	return GetProtocol(svc.Labels[key])
 }
 
 func (service *ServiceInfo) Name() string {
@@ -121,6 +123,9 @@ func (manager *K8sResourceManager) AddServiceLabel(serviceInfo *ServiceInfo, key
 }
 
 func mergeValue(oldValue string, value string) (string, bool) {
+	if value == "" {
+		return oldValue, false
+	}
 	if oldValue == "" {
 		return value, value != oldValue
 	}

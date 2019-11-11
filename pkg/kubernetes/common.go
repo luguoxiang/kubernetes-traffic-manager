@@ -95,6 +95,10 @@ func ServicePortProtocol(port uint32) string {
 	return fmt.Sprintf("traffic.port.%d", port)
 }
 
+func IngressAttrLabel(port uint32, attr string) string {
+	return fmt.Sprintf("traffic.ingress.port.%d.%s", port, attr)
+}
+
 func PodPortProtcolByService(svc string, port uint32) string {
 	return fmt.Sprintf("%s%s.port.%d", POD_SERVICE_PREFIX, svc, port)
 }

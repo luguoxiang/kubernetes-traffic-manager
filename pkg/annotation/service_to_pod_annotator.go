@@ -51,11 +51,12 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 	}
 
 	for _, port := range svc.Ports {
-		svc_key := kubernetes.ServicePortProtocol(port.Port)
-		protocol := svc.Labels[svc_key]
-		if protocol == "" {
-			//annotated by ingress_lds
-			protocol = svc.Annotations[svc_key]
+		var protocol string
+		if svc.IsIngressHttpPort(port.Port) {
+			protocol = "http"
+		} else {
+			svc_key := kubernetes.ServicePortProtocol(port.Port)
+			protocol = svc.Labels[svc_key]
 		}
 		if protocol != "" {
 			key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)

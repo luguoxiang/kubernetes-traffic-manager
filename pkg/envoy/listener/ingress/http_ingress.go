@@ -11,6 +11,7 @@ type IngressHttpInfo struct {
 	Host    string
 	Path    string
 	Cluster string
+	Secret  string
 }
 
 func NewIngressHttpInfo(host string, path string, cluster string) *IngressHttpInfo {
