@@ -22,8 +22,9 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/sampl
 kubectl apply -f samples/ingress.yaml
 
 # wait awhile then run
-curl -H "Host: productpage.com" localhost/productpage
-curl -v localhost/reviews/0
+INGRESS_IP=`kubectl get svc traffic-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`
+curl -H "Host: productpage.com" ${INGRESS_IP}/productpage
+curl -v ${INGRESS_IP}/reviews/0
 
 
 ```
@@ -49,11 +50,11 @@ kubectl label deployment reviews-v2 traffic.envoy.enabled=true
 kubectl label deployment reviews-v3 traffic.envoy.enabled=true
 
 # generate traffic
-curl -v localhost/reviews/0
+curl -v ${INGRESS_IP}/reviews/0
 
 # query runtime metrics
-curl localhost/api/v1/label/__name__/values |jq
-curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_cluster_outbound_upstream_rq_completed{instance='(Ingress PodIP):8900', envoy_cluster_name='9080|default|reviews'}"|jq
+curl ${INGRESS_IP}/api/v1/label/__name__/values |jq
+curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_outbound_upstream_rq_completed{instance='(Ingress PodIP):8900', envoy_cluster_name='9080|default|reviews'}"|jq
 ```
 
 # Load Balancing
@@ -75,13 +76,13 @@ kubectl label deployment reviews-v2 traffic.endpoint.weight=10
 kubectl label deployment reviews-v3 traffic.endpoint.weight=0
 
 # The value should be 2, since reviews-v3 has weight 0
-curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_cluster_outbound_membership_total{envoy_cluster_name='9080|default|reviews'}"|jq
+curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_outbound_membership_total{envoy_cluster_name='9080|default|reviews'}"|jq
 
 # repeat many times
-curl -v http://localhost/reviews/0
+curl -v http://${INGRESS_IP}/reviews/0
 
 # The value of reviews-v1 and reviews-v2 should be about 10:1
-curl -G http://localhost/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2', instance='(review-v1 or review-v2 pod ip):8900'}"|jq
+curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2', instance='(review-v1 or review-v2 pod ip):8900'}"|jq
 
 # Use cookie hash policy
 kubectl label svc reviews traffic.lb.policy=RING_HASH
@@ -90,12 +91,12 @@ kubectl label svc reviews traffic.hash.cookie.ttl="100000"
 
 kubectl label deployment reviews-v3 traffic.endpoint.weight=20
 
-curl -v  http://localhost/reviews/0
+curl -v  http://${INGRESS_IP}/reviews/0
 # The http response should contains set-cookie, for example:
 # set-cookie: mycookie="3acd918773ba09c5"; Max-Age=100; HttpOnly
 
 #following request should always send to same review pod, it should always contain "ratings" or always be without "ratings"
-curl -v  -H "Cookie: mycookie=3acd918773ba09c5" http://localhost/reviews/0
+curl -v  -H "Cookie: mycookie=3acd918773ba09c5" http://${INGRESS_IP}/reviews/0
 
 kubectl delete -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 ```
