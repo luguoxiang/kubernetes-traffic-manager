@@ -3,6 +3,7 @@ package ingress
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -14,7 +15,6 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -139,7 +139,7 @@ func (cps *IngressListenersControlPlaneService) ServiceUpdated(oldService, newSe
 	cps.ServiceAdded(newService)
 }
 
-func (cps *IngressListenersControlPlaneService) CreateHttpFilterChain(virtualHosts []route.VirtualHost) listener.FilterChain {
+func (cps *IngressListenersControlPlaneService) createFilters(virtualHosts []route.VirtualHost, pathList []*IngressHttpInfo) []listener.Filter {
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.AUTO,
 		StatPrefix: "traffic-ingress",
@@ -150,12 +150,14 @@ func (cps *IngressListenersControlPlaneService) CreateHttpFilterChain(virtualHos
 			},
 		},
 
-		Tracing: &hcm.HttpConnectionManager_Tracing{
-			OperationName: hcm.EGRESS,
-		},
 		HttpFilters: []*hcm.HttpFilter{{
 			Name: common.RouterHttpFilter,
 		}},
+	}
+
+	if len(pathList) == 1 {
+		//multiple ingress config in same connection manager is ignored
+		pathList[0].ConfigConnectionManager(manager)
 	}
 	filterConfig, err := types.MarshalAny(manager)
 	if err != nil {
@@ -163,80 +165,110 @@ func (cps *IngressListenersControlPlaneService) CreateHttpFilterChain(virtualHos
 		panic(err.Error())
 	}
 
+	return []listener.Filter{{
+		Name:       common.HTTPConnectionManager,
+		ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
+	}}
+
+}
+
+func (cps *IngressListenersControlPlaneService) createHttpFilterChain(pathList []*IngressHttpInfo) listener.FilterChain {
+	var virtualHosts []route.VirtualHost
+	var routes []route.Route
+	for index, info := range pathList {
+		if index > 0 && info.Path == pathList[index-1].Path && info.Host == pathList[index-1].Host {
+			//ignore same host and path
+			continue
+		}
+
+		routes = append(routes, info.CreateRoute())
+		if index == len(pathList)-1 || info.Host != pathList[index+1].Host {
+			virtualHosts = append(virtualHosts, route.VirtualHost{
+				Name:    IngressName(info.Host),
+				Domains: []string{info.Host},
+				Routes:  routes,
+			})
+			routes = nil
+		}
+	}
+
 	return listener.FilterChain{
-		Filters: []listener.Filter{{
-			Name:       common.HTTPConnectionManager,
-			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
-		}},
+		Filters: cps.createFilters(virtualHosts, pathList),
+	}
+}
+func (cps *IngressListenersControlPlaneService) createTlsHttpFilterChain(host string, pathList []*IngressHttpInfo) listener.FilterChain {
+	var routes []route.Route
+	secrets := make(map[string]bool)
+
+	for _, info := range pathList {
+		routes = append(routes, info.CreateRoute())
+		secrets[info.Secret] = true
+
+	}
+	virtualHost := route.VirtualHost{
+		Name:    IngressName(host),
+		Domains: []string{host},
+		Routes:  routes,
+	}
+
+	var sdsConfig []*auth.SdsSecretConfig
+	for secret, _ := range secrets {
+		sdsConfig = append(sdsConfig, &auth.SdsSecretConfig{
+			Name: secret,
+			SdsConfig: &core.ConfigSource{
+				ConfigSourceSpecifier: &core.ConfigSource_Ads{
+					Ads: &core.AggregatedConfigSource{},
+				},
+			},
+		})
+	}
+	return listener.FilterChain{
+		FilterChainMatch: &listener.FilterChainMatch{
+			ServerNames:       []string{host},
+			TransportProtocol: "tls",
+		},
+
+		Filters: cps.createFilters([]route.VirtualHost{virtualHost}, pathList),
+
+		TlsContext: &auth.DownstreamTlsContext{
+			CommonTlsContext: &auth.CommonTlsContext{
+				TlsCertificateSdsSecretConfigs: sdsConfig,
+			},
+		},
 	}
 }
 
 func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 
-	var virtualHosts []route.VirtualHost
-
-	var pathList []*IngressHttpInfo
+	var pathListWithSecret map[string][]*IngressHttpInfo
+	var pathListWithoutSecret []*IngressHttpInfo
 
 	for _, resource := range resourceMap {
 		v := resource.(*IngressHttpInfo)
-
-		pathList = append(pathList, v)
-
-	}
-	sort.SliceStable(pathList, func(i, j int) bool {
-		a := pathList[i]
-		b := pathList[j]
-		if a.Host != b.Host {
-			// * should be last
-			if a.Host == "*" {
-				return false
+		if v.Secret != "" && v.Host != "" {
+			pathList := pathListWithSecret[v.Host]
+			if pathList == nil {
+				pathListWithSecret[v.Host] = []*IngressHttpInfo{v}
+			} else {
+				pathListWithSecret[v.Host] = append(pathList, v)
 			}
-			if b.Host == "*" {
-				return true
-			}
-			return a.Host > b.Host
-		}
-		return a.Path > b.Path
-	})
-
-	var routes []route.Route
-	for index, info := range pathList {
-		if index > 0 && info.Path == pathList[index-1].Path && info.Host == pathList[index-1].Host {
-			continue
-		}
-		host := info.Host
-		var name string
-		if host == "*" {
-			name = "all_ingress_vh"
 		} else {
-			name = fmt.Sprintf("%s_ingress_vh", strings.Replace(host, ".", "_", -1))
-		}
-
-		routeAction := info.CreateRouteAction(info.Cluster)
-		routes = append(routes, route.Route{
-			Match: route.RouteMatch{
-				PathSpecifier: &route.RouteMatch_Prefix{
-					Prefix: info.Path,
-				},
-			},
-			Action: &route.Route_Route{
-				Route: routeAction,
-			},
-		})
-		if index == len(pathList)-1 || host != pathList[index+1].Host {
-			virtualHosts = append(virtualHosts, route.VirtualHost{
-				Name:    name,
-				Domains: []string{host},
-				Routes:  routes,
-			})
-			routes = nil
+			pathListWithoutSecret = append(pathListWithoutSecret, v)
 		}
 
 	}
+
 	var filterChains []listener.FilterChain
 
-	if len(virtualHosts) > 0 {
-		filterChains = append(filterChains, cps.CreateHttpFilterChain(virtualHosts))
+	for host, pathList := range pathListWithSecret {
+		SortIngressHttpInfo(pathList)
+		filterChains = append(filterChains, cps.createTlsHttpFilterChain(host, pathList))
+	}
+
+	if len(pathListWithoutSecret) > 0 {
+		SortIngressHttpInfo(pathListWithoutSecret)
+
+		filterChains = append(filterChains, cps.createHttpFilterChain(pathListWithoutSecret))
 	}
 
 	l := &v2.Listener{
