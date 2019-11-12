@@ -17,13 +17,16 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 ```
 # deploy sample application
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
+kubctl apply -f samples/http-text-response.yaml
 
 # deploy k8s ingress resource
 kubectl apply -f samples/ingress.yaml
 
 # wait awhile then run
 INGRESS_IP=`kubectl get svc traffic-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`
-curl -H "Host: productpage.com" ${INGRESS_IP}/productpage
+
+curl -H "Host: hello.com" ${INGRESS_IP}/hello
+curl ${INGRESS_IP}/productpage
 curl -v ${INGRESS_IP}/reviews/0
 
 

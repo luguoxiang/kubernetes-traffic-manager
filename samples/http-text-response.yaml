@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: http-text-response
+spec:
+  template:
+    metadata:
+      labels:
+        app: http-text-response
+    spec:
+      containers:
+      - image: "luguoxiang/http-text-response"
+        name: http-text-response
+        env:
+        - name: RESPONSE_BODY
+          value: "Hello World"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-text-response
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    targetPort: 8080
+    port: 8080
+  selector:
+    app: http-text-response

@@ -1,0 +1,12 @@
+{
+  "name": "direct-response",
+  "version": "1.0.0",
+  "description": "HTTP server that return specified text",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.16.1"
+  }
+}
