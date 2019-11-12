@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"fmt"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
+	"strings"
 )
 
 type IngressHostInfo struct {
@@ -55,6 +56,9 @@ func NewIngressInfo(ingress *v1beta1.Ingress) *IngressInfo {
 			hostInfo := hostPathToClusterMap[host]
 			if hostInfo != nil {
 				hostInfo.Secret = tls.SecretName
+				if strings.Index(hostInfo.Secret, ".") < 0 {
+					hostInfo.Secret = fmt.Sprintf("%s.%s", hostInfo.Secret, ingress.Namespace)
+				}
 			}
 		}
 	}

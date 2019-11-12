@@ -38,6 +38,20 @@ type SecretEventHandler interface {
 	SecretUpdated(oldSecret, newSecret *SecretInfo)
 }
 
+func (manager *K8sResourceManager) PostSecret(name string, namespace string, certificate []byte, privateKey []byte) error {
+	secret := &v1.Secret{}
+	secret.Name = name
+	secret.Namespace = namespace
+	secret.Data = map[string][]byte{
+		"tls.crt": certificate,
+		"tls.key": privateKey,
+	}
+
+	secret.Type = "kubernetes.io/tls"
+	_, err := manager.ClientSet.CoreV1().Secrets(namespace).Create(secret)
+	return err
+}
+
 func (manager *K8sResourceManager) WatchSecrets(stopper chan struct{}, handlers ...SecretEventHandler) {
 	watchlist := cache.NewListWatchFromClient(
 		manager.ClientSet.Core().RESTClient(), "secrets", "",

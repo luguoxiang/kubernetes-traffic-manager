@@ -11,10 +11,10 @@ clean:
 	rm -f traffic-control-plane envoy-tools envoy-manager
 	
 build: vendor
-	go build -v -o bin/traffic-control-plane cmd/control-plane/controlplane.go
-	go build -v -o bin/envoy-config cmd/envoy-config/envoy-config.go
-	go build -v -o bin/envoy-tools cmd/envoy-tools/envoy-tools.go
-	go build -v -o bin/envoy-manager cmd/envoy-manager/envoy-manager.go
+	go build -v -o bin/traffic-control-plane cmd/control-plane/main.go
+	go build -v -o bin/envoy-config cmd/envoy-config/main.go
+	go build -v -o bin/envoy-tools cmd/envoy-tools/main.go
+	go build -v -o bin/envoy-manager cmd/envoy-manager/main.go
 
 test: vendor
 	go test -v github.com/luguoxiang/kubernetes-traffic-manager/pkg/...

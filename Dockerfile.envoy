@@ -13,8 +13,8 @@ ADD Gopkg.toml .
 RUN dep ensure -vendor-only -v
 ADD cmd cmd
 ADD pkg pkg
-RUN go build -o envoy-tools cmd/envoy-tools/envoy-tools.go
-RUN go build -o envoy-manager cmd/envoy-manager/envoy-manager.go
+RUN go build -o envoy-tools cmd/envoy-tools/main.go
+RUN go build -o envoy-manager cmd/envoy-manager/main.go
 
 # final stage
 FROM golang:1.11-alpine

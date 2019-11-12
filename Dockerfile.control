@@ -13,11 +13,13 @@ ADD Gopkg.toml .
 RUN dep ensure -vendor-only -v
 ADD cmd cmd
 ADD pkg pkg
-RUN go build -o traffic-control-plane cmd/control-plane/controlplane.go
-RUN go build -o envoy-config cmd/envoy-config/envoy-config.go
+RUN go build -o create-secret cmd/create-secret/main.go
+RUN go build -o traffic-control-plane cmd/control-plane/main.go
+RUN go build -o envoy-config cmd/envoy-config/main.go
 
 # final stage
 FROM golang:1.11-alpine
 WORKDIR /app
 COPY --from=build-env /go/src/github.com/luguoxiang/kubernetes-traffic-manager/traffic-control-plane /app/
 COPY --from=build-env /go/src/github.com/luguoxiang/kubernetes-traffic-manager/envoy-config /app/
+COPY --from=build-env /go/src/github.com/luguoxiang/kubernetes-traffic-manager/create-secret /app/

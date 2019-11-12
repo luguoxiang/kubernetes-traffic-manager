@@ -240,12 +240,12 @@ func (cps *IngressListenersControlPlaneService) createTlsHttpFilterChain(host st
 
 func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
 
-	var pathListWithSecret map[string][]*IngressHttpInfo
+	pathListWithSecret := make(map[string][]*IngressHttpInfo)
 	var pathListWithoutSecret []*IngressHttpInfo
 
 	for _, resource := range resourceMap {
 		v := resource.(*IngressHttpInfo)
-		if v.Secret != "" && v.Host != "" {
+		if v.Secret != "" && v.Host != "*" {
 			pathList := pathListWithSecret[v.Host]
 			if pathList == nil {
 				pathListWithSecret[v.Host] = []*IngressHttpInfo{v}
