@@ -62,6 +62,7 @@ func (pa *ServiceToPodAnnotator) addServiceAnnotationToPod(pod *kubernetes.PodIn
 			key := kubernetes.PodPortProtcolByService(svc.Name(), port.Port)
 			annotations[key] = protocol
 
+			//used for headless cluster, should create a listener for each podip:targetPort of the cluster
 			key = kubernetes.PodTargetPortProtcolByService(svc.Name(), port.TargetPort)
 			annotations[key] = protocol
 		}

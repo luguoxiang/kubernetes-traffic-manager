@@ -24,7 +24,10 @@ func TestPodFilter(t *testing.T) {
 	var pod corev1.Pod
 	pod.Namespace = "test-ns"
 	pod.Labels = map[string]string{"traffic.envoy.enabled": "true", "c": "d"}
-	pod.Annotations = map[string]string{"traffic.svc.Service1.port.8080": "http"}
+	pod.Annotations = map[string]string{
+		"traffic.svc.Service1.port.8080":        "http",
+		"traffic.svc.Service1.target.port.8080": "http",
+	}
 	pod.Status.PodIP = "10.1.1.1"
 	pod.Name = "Comp1-pod"
 	podWatchlist.Add(&pod)

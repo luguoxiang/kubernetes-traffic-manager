@@ -66,6 +66,15 @@ func getServiceAndPort(annotation string) (string, uint32) {
 	return tokens[2], port
 }
 
+/**
+ * Used for k8s non-headless service.
+ * LDS should create a listener for each clusterip:port of the service
+ * CDS should create a service cluster for each clusterip:port of the service
+ * example:
+ * traffic.svc.service1.port.1234=http
+ * should return map 1234 => service1 => true
+ */
+
 func (pod *PodInfo) GetPortSet() map[uint32]map[string]bool {
 	result := make(map[uint32]map[string]bool)
 	for k, v := range pod.Annotations {
@@ -140,12 +149,24 @@ func (pod *PodInfo) collectTargetPort(configMap map[string]string, result map[ui
 			if strings.HasPrefix(k1, "traffic.port.") {
 				continue
 			}
+			if strings.HasPrefix(k1, "traffic.target.port.") {
+				continue
+			}
 			portInfo.ConfigMap[k1] = v1
 		}
 
 	}
 }
 
+/**
+ * Used for k8s headless service.
+ * LDS should create a listener for each podip:targetPort of the service
+ * CDS should create a static cluster for each podip:targetPort of the service
+ * example:
+ * traffic.svc.service1.attr=value
+ * traffic.svc.service1.target.port.5678=http
+ * should return map 5678 => PodPortInfo{PROTO_HTTP, traffic.attr=value }
+ */
 func (pod *PodInfo) GetTargetPortConfig() map[uint32]*PodPortInfo {
 	serviceConfig := make(map[string]map[string]string)
 
