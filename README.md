@@ -149,18 +149,28 @@ Reference:
 * https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-routeaction-hash-policy
 
 # Enable envoy
-   When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
+   When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed. Runtime metrics and load balancing will be applied like traffic from ingress pod.
    
    By default, all envoy enabled pods' outcoming traffic will be blocked. 
    You need to add traffic.port.(port number)=(protocol) labels for service or pod to unblock traffic on certain port.
-   The protocol can be http or tcp or direct(bypass envoy load balancing). 
+   The protocol can be http or tcp or direct(bypass envoy loadbalacing)
    
+```
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
+
+#unblock reviews service traffic
+kubectl label svc reviews traffic.port.9080=http
+
+#enable envoy for zipkin pod
+kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
+
+#lb policy configuration on reviews sevice should be applied
+kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl http://reviews:9080/reviews/0
+
+# runtime metrics
+curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_outbound_upstream_rq_completed{instance='(traffic-zipkin PodIP):8900', envoy_cluster_name='9080|default|reviews'}"|jq
+```
    service in ingress configuration will be automatically annotated(not labeled) with http protocol, so no need to label them.
-   
-   For example, following label wil let envoy enabled pods accessing kubernetes service
-   ```
-   kubectl label svc kubernetes traffic.port.443=direct
-   ```
    
 # Fault Injection
 
@@ -173,12 +183,8 @@ Reference:
 | Pod, Service | traffic.rate.limit | 0 | rate limit number in Kbps on each client |
 
 Ingress does not support Fault Injection
+
 ```
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
-
-kubectl label svc reviews traffic.port.9080=http
-kubectl label deployment traffic-zipkin traffic.envoy.enabled=true
-
 kubectl label svc reviews traffic.fault.delay.time=3000
 kubectl label svc reviews traffic.fault.delay.percentage=100
 
