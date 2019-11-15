@@ -17,20 +17,84 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 ```
 # deploy sample application
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
-kubctl apply -f samples/http-text-response.yaml
 
-# deploy k8s ingress resource
+# deploy k8s ingress resource, note that for k8s version <1.15, apiVersion in the file should be changed to extensions/v1beta1
 kubectl apply -f samples/ingress.yaml
 
 # wait awhile then run
 INGRESS_IP=`kubectl get svc traffic-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`
 
-curl -H "Host: hello.com" ${INGRESS_IP}/hello
 curl ${INGRESS_IP}/productpage
 curl -v ${INGRESS_IP}/reviews/0
+```
 
+# Https ingress gateway with certbot
+Ensure your traffic-ingress service has a public loadbalancer hostname and ip, Assume the hostname is k8s-test.com.
+```
+mkdir certbot
+docker run -it -v ${PWD}/certbot:/etc/letsencrypt certbot/certbot certonly --manual  --preferred-challenges http -d k8s-test.com
+```
+The command will show message like following:
+```
+Create a file containing just this data:
+
+jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA.3Jf5jGBx3a6iQm1qUIJUlPjc7UrWMNhsTCzFHOV5FgM
+
+And make it available on your web server at this URL:
+
+http://k8s-test.com/.well-known/acme-challenge/jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA
+```
+
+Open another terminal, change value of RESPONSE_BODY in samples/http-text-response.yaml to the displayed data(in above example, jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA.3Jf5jGBx3a6iQm1qUIJUlPjc7UrWMNhsTCzFHOV5FgM).
 
 ```
+kubctl apply -f samples/http-text-response.yaml
+cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: https-ingress
+spec:
+  rules:
+  - host: (your host name)
+    http:
+      paths:
+      - path: /.well-known/acme-challenge/jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA
+        backend:
+          serviceName: http-text-response
+          servicePort: 8080
+EOF
+```
+
+Note that you need to change host and path value to the url in your cerbot output. For k8s version <1.15, apiVersion should be changed to extensions/v1beta1
+
+After running above commands, switch to cerbot terminal, press <ENTER> to let command conntinue, cerbot will generate the tls secrets to file. Then run follwing command:
+ ```
+ kubectl create secret tls ingressgateway-certs   --key certbot/live/(your host name)/privkey.pem --cert certbot/live/(your host name)/fullchain.pem
+ 
+cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: https-ingress
+spec:
+  tls:
+  - hosts:
+    - k8s-test.ddnsking.com
+    secretName: ingressgateway-certs
+  rules:
+  - host: (your host name)
+    http:
+      paths:
+      - path: /productpage
+        backend:
+          serviceName: productpage
+          servicePort: 9080
+EOF          
+ ```
+
+Now open browser and brows https://(your host name)/productpage
+
 # Required labels
    When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
    
