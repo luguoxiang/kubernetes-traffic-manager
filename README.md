@@ -261,7 +261,7 @@ shell> kubectl exec traffic-envoy-manager-6f7nw -- ./envoy-tools -id (prefix of 
 ```
 kubectl exec traffic-control-89778f5d8-nmvrn -- ./envoy-config --nodeId reviews-v3-5df889bcff-f2hgh.default
 ```
-node id is pod name and pod namespace
+node id is pod name and pod namespace, ingress node id is traffic-ingress.
 
 
 # Circuit Breaker
