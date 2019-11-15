@@ -29,7 +29,7 @@ curl -v ${INGRESS_IP}/reviews/0
 ```
 
 # Https ingress gateway with certbot
-Ensure your traffic-ingress service has a public loadbalancer ip(${INGRESS_IP}) and you need to apply a public host name for the ip.
+Ensure your traffic-ingress service has a public loadbalancer ip(${INGRESS_IP}) and you need to apply a public host name for the ip. When hostname for ingress is ready:
 ```
 mkdir certbot
 docker run -it -v ${PWD}/certbot:/etc/letsencrypt certbot/certbot certonly --manual  --preferred-challenges http -d (your host name)
