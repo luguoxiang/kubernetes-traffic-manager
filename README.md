@@ -51,7 +51,7 @@ And make it available on your web server at this URL:
 http://(your host name)/.well-known/acme-challenge/jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA
 ```
 
-Open another terminal, change value of RESPONSE_BODY in samples/http-text-response.yaml to the displayed data(in above example, jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA.3Jf5jGBx3a6iQm1qUIJUlPjc7UrWMNhsTCzFHOV5FgM).
+Open another terminal, change value of RESPONSE_BODY in samples/http-text-response.yaml to the displayed data(in above example, jLpYJvXE4mP32AgP42O4Ws...).
 
 ```
 kubctl apply -f samples/http-text-response.yaml
