@@ -93,7 +93,7 @@ spec:
 EOF          
  ```
 
-Now open browser and browse https://(your host name)/
+Now open browser and browse https://(your host name)/productpage
 
 # Runtime metrics
 ```
