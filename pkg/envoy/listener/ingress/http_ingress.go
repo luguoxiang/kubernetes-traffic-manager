@@ -3,6 +3,7 @@ package ingress
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
 	"sort"
@@ -11,17 +12,21 @@ import (
 
 type IngressHttpInfo struct {
 	listener.HttpListenerConfigInfo
-	Host    string
-	Path    string
-	Cluster string
-	Secret  string
+	Host      string
+	Path      string
+	Service   string
+	Namespace string
+	Port      uint32
+	Secret    string
 }
 
-func NewIngressHttpInfo(host string, path string, cluster string) *IngressHttpInfo {
+func NewIngressHttpInfo(host string, path string, svc string, ns string, port uint32) *IngressHttpInfo {
 	return &IngressHttpInfo{
-		Host:    host,
-		Path:    path,
-		Cluster: cluster,
+		Host:      host,
+		Path:      path,
+		Service:   svc,
+		Namespace: ns,
+		Port:      port,
 	}
 }
 
@@ -32,6 +37,11 @@ func IngressName(host string) string {
 		return fmt.Sprintf("%s_ingress_vh", strings.Replace(host, ".", "_", -1))
 	}
 }
+
+func (info *IngressHttpInfo) GetCluster() string {
+	return cluster.ServiceClusterName(info.Service, info.Namespace, info.Port)
+}
+
 func (info *IngressHttpInfo) Name() string {
 	if info.Host == "*" {
 		fmt.Sprintf("http|all|%s", info.Path)
@@ -48,7 +58,7 @@ func (info *IngressHttpInfo) String() string {
 }
 
 func (info *IngressHttpInfo) CreateRoute() route.Route {
-	routeAction := info.CreateRouteAction(info.Cluster)
+	routeAction := info.CreateRouteAction(info.GetCluster())
 	return route.Route{
 		Match: route.RouteMatch{
 			PathSpecifier: &route.RouteMatch_Prefix{

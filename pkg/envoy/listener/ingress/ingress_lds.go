@@ -11,7 +11,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
-	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"os"
@@ -108,7 +107,7 @@ func (cps *IngressListenersControlPlaneService) ServiceAdded(svc *kubernetes.Ser
 			if len(pathHost) != 2 {
 				continue
 			}
-			info := NewIngressHttpInfo(pathHost[1], pathHost[0], cluster.ServiceClusterName(svc.Name(), svc.Namespace(), port.Port))
+			info := NewIngressHttpInfo(pathHost[1], pathHost[0], svc.Name(), svc.Namespace(), port.Port)
 			info.Secret = secret
 			info.Config(svc.Labels)
 			cps.UpdateResource(info, svc.ResourceVersion)
@@ -129,7 +128,7 @@ func (cps *IngressListenersControlPlaneService) ServiceDeleted(svc *kubernetes.S
 			if len(pathHost) != 2 {
 				continue
 			}
-			info := NewIngressHttpInfo(pathHost[1], pathHost[0], cluster.ServiceClusterName(svc.Name(), svc.Namespace(), port.Port))
+			info := NewIngressHttpInfo(pathHost[1], pathHost[0], svc.Name(), svc.Namespace(), port.Port)
 			cps.UpdateResource(info, "")
 		}
 	}
@@ -155,7 +154,17 @@ func (cps *IngressListenersControlPlaneService) createFilters(virtualHosts []rou
 		}},
 	}
 
-	if len(pathList) == 1 {
+	var conflictConfig bool
+	for index, info := range pathList {
+		if index > 0 {
+			if info.Service != pathList[0].Service {
+				conflictConfig = true
+			} else if info.Namespace != pathList[0].Namespace {
+				conflictConfig = true
+			}
+		}
+	}
+	if !conflictConfig {
 		//multiple ingress config in same connection manager is ignored
 		pathList[0].ConfigConnectionManager(manager)
 	}
