@@ -93,29 +93,10 @@ spec:
 EOF          
  ```
 
-Now open browser and browse https://(your host name)/productpage
+Now open browser and browse https://(your host name)/
 
-# Required labels
-   When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
-   
-   By default, all envoy enabled pods' outcoming traffic will be blocked. 
-   You need to add traffic.port.(port number)=(protocol) labels for service or pod to unblock traffic on certain port.
-   The protocol can be http or tcp or direct(bypass envoy load balancing). 
-   
-   service in ingress configuration will be automatically annotated(not labeled) with http protocol, so no need to label them.
-   
-   For example, following label wil let envoy enabled pods accessing kubernetes service
-   ```
-   kubectl label svc kubernetes traffic.port.443=direct
-   ```
-   
 # Runtime metrics
 ```
-#enable envoy to collect runtime metrics
-kubectl label deployment reviews-v1 traffic.envoy.enabled=true
-kubectl label deployment reviews-v2 traffic.envoy.enabled=true
-kubectl label deployment reviews-v3 traffic.envoy.enabled=true
-
 # generate traffic
 curl -v ${INGRESS_IP}/reviews/0
 
@@ -172,6 +153,20 @@ Reference:
 * https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers
 * https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-routeaction-hash-policy
 
+# Enable envoy
+   When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
+   
+   By default, all envoy enabled pods' outcoming traffic will be blocked. 
+   You need to add traffic.port.(port number)=(protocol) labels for service or pod to unblock traffic on certain port.
+   The protocol can be http or tcp or direct(bypass envoy load balancing). 
+   
+   service in ingress configuration will be automatically annotated(not labeled) with http protocol, so no need to label them.
+   
+   For example, following label wil let envoy enabled pods accessing kubernetes service
+   ```
+   kubectl label svc kubernetes traffic.port.443=direct
+   ```
+   
 # Fault Injection
 
 | Resource | Labels | Default | Description |
