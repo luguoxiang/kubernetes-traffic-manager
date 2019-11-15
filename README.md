@@ -170,7 +170,7 @@ kubectl exec traffic-zipkin-694c7884d5-bqdvm -- curl http://reviews:9080/reviews
 # runtime metrics
 curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_outbound_upstream_rq_completed{instance='(traffic-zipkin PodIP):8900', envoy_cluster_name='9080|default|reviews'}"|jq
 ```
-   service in ingress configuration will be automatically annotated(not labeled) with http protocol, so no need to label them.
+   service in ingress configuration will be automatically annotated(not labeled) with http protocol, so no need to unblock them.
    
 # Fault Injection
 
