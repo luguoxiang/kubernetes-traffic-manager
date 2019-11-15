@@ -115,9 +115,6 @@ curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_
 | Pod, Deployment, StatefulSet, DaemonSet | traffic.endpoint.weight | 100 | weight value for related pods [0-128]  |
 
 ```
-# if reviews is not in ingress configuration, following lable is required
-# kubectl label svc reviews traffic.port.9080=http
-
 # Default lb policy is ROUND_ROBIN
 kubectl label deployment reviews-v1 traffic.endpoint.weight=100 
 kubectl label deployment reviews-v2 traffic.endpoint.weight=10 
