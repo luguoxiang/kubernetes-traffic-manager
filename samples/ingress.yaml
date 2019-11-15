@@ -7,13 +7,6 @@ spec:
     serviceName: productpage
     servicePort: 9080
   rules:
-  - host: hello.com
-    http:
-      paths:
-      - path: /hello
-        backend:
-          serviceName: http-text-response
-          servicePort: 8080
   - http:
       paths:
       - path: /productpage
