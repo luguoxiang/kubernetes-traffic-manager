@@ -126,12 +126,6 @@ kubectl label deployment reviews-v3 traffic.endpoint.weight=0
 # The value should be 2, since reviews-v3 has weight 0
 curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_outbound_membership_total{envoy_cluster_name='9080|default|reviews'}"|jq
 
-# repeat many times
-curl -v http://${INGRESS_IP}/reviews/0
-
-# The value of reviews-v1 and reviews-v2 should be about 10:1
-curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_listener_http_static_downstream_rq_xx{envoy_response_code_class='2', instance='(review-v1 or review-v2 pod ip):8900'}"|jq
-
 # Use cookie hash policy
 kubectl label svc reviews traffic.lb.policy=RING_HASH
 kubectl label svc reviews traffic.hash.cookie.name="mycookie"
