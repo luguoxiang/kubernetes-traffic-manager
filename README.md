@@ -32,7 +32,7 @@ curl -v ${INGRESS_IP}/reviews/0
 curl ${INGRESS_IP}/api/v1/label/__name__/values
 ```
 
-# Https ingress gateway with certbot
+# Https ingress gateway using certification from Let's encrypt
 Ensure your traffic-ingress service has a public loadbalancer ip(${INGRESS_IP}) and you need to apply a public host name for the ip. When hostname for ingress is ready:
 ```
 mkdir certbot
