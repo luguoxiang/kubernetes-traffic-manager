@@ -68,7 +68,7 @@ EOF
 
 Note that you need to change host and path value to the value in your cerbot output. For k8s version <1.15, apiVersion should be changed to extensions/v1beta1
 
-After running above commands, switch to cerbot terminal, press <ENTER> to let command conntinue, cerbot will generate the tls secrets to file. Then run follwing command:
+After running above commands, switch to cerbot terminal, press ENTER to let command conntinue, cerbot will generate the tls secrets to file. Then run follwing command:
  ```
  kubectl create secret tls ingressgateway-certs   --key certbot/live/(your host name)/privkey.pem --cert certbot/live/(your host name)/fullchain.pem
  
