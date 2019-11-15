@@ -29,10 +29,10 @@ curl -v ${INGRESS_IP}/reviews/0
 ```
 
 # Https ingress gateway with certbot
-Ensure your traffic-ingress service has a public loadbalancer hostname and ip, Assume the hostname is k8s-test.com.
+Ensure your traffic-ingress service has a public loadbalancer hostname and ip.
 ```
 mkdir certbot
-docker run -it -v ${PWD}/certbot:/etc/letsencrypt certbot/certbot certonly --manual  --preferred-challenges http -d k8s-test.com
+docker run -it -v ${PWD}/certbot:/etc/letsencrypt certbot/certbot certonly --manual  --preferred-challenges http -d (your host name)
 ```
 The command will show message like following:
 ```
@@ -42,7 +42,7 @@ jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA.3Jf5jGBx3a6iQm1qUIJUlPjc7UrWMNhsTCzF
 
 And make it available on your web server at this URL:
 
-http://k8s-test.com/.well-known/acme-challenge/jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA
+http://(your host name)/.well-known/acme-challenge/jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA
 ```
 
 Open another terminal, change value of RESPONSE_BODY in samples/http-text-response.yaml to the displayed data(in above example, jLpYJvXE4mP32AgP42O4Ws-iT7_Z9St2pOjdlbqhkhA.3Jf5jGBx3a6iQm1qUIJUlPjc7UrWMNhsTCzFHOV5FgM).
@@ -66,7 +66,7 @@ spec:
 EOF
 ```
 
-Note that you need to change host and path value to the url in your cerbot output. For k8s version <1.15, apiVersion should be changed to extensions/v1beta1
+Note that you need to change host and path value to the value in your cerbot output. For k8s version <1.15, apiVersion should be changed to extensions/v1beta1
 
 After running above commands, switch to cerbot terminal, press <ENTER> to let command conntinue, cerbot will generate the tls secrets to file. Then run follwing command:
  ```
@@ -80,7 +80,7 @@ metadata:
 spec:
   tls:
   - hosts:
-    - k8s-test.ddnsking.com
+    - (your host name)
     secretName: ingressgateway-certs
   rules:
   - host: (your host name)
@@ -93,7 +93,7 @@ spec:
 EOF          
  ```
 
-Now open browser and brows https://(your host name)/productpage
+Now open browser and browse https://(your host name)/productpage
 
 # Required labels
    When user label a pod or deployment with "traffic.envoy.enabled=true", the related pods' traffic will be managed.
