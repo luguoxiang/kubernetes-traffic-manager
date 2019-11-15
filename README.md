@@ -24,8 +24,12 @@ kubectl apply -f samples/ingress.yaml
 # wait awhile then run
 INGRESS_IP=`kubectl get svc traffic-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`
 
+#access productpage service
 curl ${INGRESS_IP}/productpage
+#access review service
 curl -v ${INGRESS_IP}/reviews/0
+#access promethues service
+curl ${INGRESS_IP}/api/v1/label/__name__/values
 ```
 
 # Https ingress gateway with certbot
