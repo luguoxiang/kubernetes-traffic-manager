@@ -35,8 +35,7 @@ func TestPodFilter(t *testing.T) {
 	time.Sleep(time.Second)
 
 	result, _ := lds.GetResources([]string{})
-	assert.Equal(t, len(result), 2)
-	assert.Equal(t, result["blackhole"].Name(), "blackhole")
+	assert.Equal(t, len(result), 1)
 	assert.Equal(t, result["8080|Comp1-pod|test-ns.static"].Name(), "8080|Comp1-pod|test-ns.static")
 }
 

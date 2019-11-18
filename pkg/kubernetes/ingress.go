@@ -15,6 +15,7 @@ type IngressHostInfo struct {
 type IngressClusterInfo struct {
 	Service string
 	Port    uint32
+	Path    string
 }
 
 type IngressInfo struct {
@@ -43,6 +44,7 @@ func NewIngressInfo(ingress *v1beta1.Ingress) *IngressInfo {
 	}
 	if ingress.Spec.Backend != nil {
 		defaultCluster := &IngressClusterInfo{
+			Path:    "/",
 			Service: ingress.Spec.Backend.ServiceName,
 			Port:    uint32(ingress.Spec.Backend.ServicePort.IntVal),
 		}
@@ -75,6 +77,7 @@ func NewIngressInfo(ingress *v1beta1.Ingress) *IngressInfo {
 				path = "/"
 			}
 			hostInfo.PathMap[path] = &IngressClusterInfo{
+				Path:    path,
 				Service: cluster.Backend.ServiceName,
 				Port:    uint32(cluster.Backend.ServicePort.IntVal),
 			}
@@ -87,6 +90,14 @@ func NewIngressInfo(ingress *v1beta1.Ingress) *IngressInfo {
 		namespace:            ingress.Namespace,
 		name:                 ingress.Name,
 		ResourceVersion:      ingress.ResourceVersion,
+	}
+}
+
+func (ingress *IngressInfo) GetServiceAnnotations(hostInfo *IngressHostInfo, clusterInfo *IngressClusterInfo) map[string]string {
+	return map[string]string{
+		IngressAttrLabel(clusterInfo.Port, "name"):   fmt.Sprintf("%s@%s", ingress.name, ingress.namespace),
+		IngressAttrLabel(clusterInfo.Port, "config"): fmt.Sprintf("%s@%s", clusterInfo.Path, hostInfo.Host),
+		IngressAttrLabel(clusterInfo.Port, "secret"): hostInfo.Secret,
 	}
 }
 
