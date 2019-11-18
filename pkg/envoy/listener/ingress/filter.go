@@ -6,6 +6,8 @@ import (
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	accesslog_filter "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/ptypes"
@@ -13,7 +15,23 @@ import (
 )
 
 func createFilters(virtualHosts []*route.VirtualHost, pathList []*IngressHttpInfo) []*listener.Filter {
+	logAny, err := ptypes.MarshalAny(&accesslog.FileAccessLog{
+		Path: "/dev/stdout",
+		AccessLogFormat: &accesslog.FileAccessLog_Format{
+			Format: "[%START_TIME%] %REQ(:METHOD)% %PROTOCOL% %RESPONSE_CODE% %DURATION% %UPSTREAM_HOST%\n",
+		},
+	})
+	if err != nil {
+		glog.Warningf("Failed to MarshalAny FileAccessLog: %s", err.Error())
+		panic(err.Error())
+	}
 	manager := &hcm.HttpConnectionManager{
+		AccessLog: []*accesslog_filter.AccessLog{{
+			Name: "envoy.file_access_log",
+			ConfigType: &accesslog_filter.AccessLog_TypedConfig{
+				TypedConfig: logAny,
+			},
+		}},
 		CodecType:  hcm.HttpConnectionManager_AUTO,
 		StatPrefix: "traffic-ingress",
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
