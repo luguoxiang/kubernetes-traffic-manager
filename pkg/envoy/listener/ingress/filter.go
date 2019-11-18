@@ -18,7 +18,7 @@ func createFilters(virtualHosts []*route.VirtualHost, pathList []*IngressHttpInf
 	logAny, err := ptypes.MarshalAny(&accesslog.FileAccessLog{
 		Path: "/dev/stdout",
 		AccessLogFormat: &accesslog.FileAccessLog_Format{
-			Format: "[%START_TIME%] %REQ(:METHOD)% %PROTOCOL% %RESPONSE_CODE% %DURATION% %UPSTREAM_HOST%\n",
+			Format: "[%START_TIME%] %REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL% %RESPONSE_CODE% %DURATION% %UPSTREAM_HOST%\n",
 		},
 	})
 	if err != nil {
