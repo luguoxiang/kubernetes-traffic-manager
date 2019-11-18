@@ -38,9 +38,7 @@ func NewListenersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) 
 		ControlPlaneService: common.NewControlPlaneService(k8sManager),
 		proxyPort:           uint32(proxyPort),
 	}
-	k8sManager.Lock()
-	defer k8sManager.Unlock()
-	result.UpdateResource(&BlackHoleFilterInfo{}, "1")
+
 	return result
 }
 
@@ -137,6 +135,11 @@ func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]co
 		if glog.V(2) {
 			glog.Infof("FilterChainMatch %v = %s", fc.FilterChainMatch, listenerInfo.Name())
 		}
+	}
+	notFoundInfo := &BlackHoleFilterInfo{}
+	fc, err := notFoundInfo.CreateFilterChain(node)
+	if err == nil {
+		filterChains = append(filterChains, fc)
 	}
 
 	l := &envoy_api_v2.Listener{
