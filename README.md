@@ -18,7 +18,7 @@ helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
 # deploy sample application
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/bookinfo/platform/kube/bookinfo.yaml
 
-# deploy k8s ingress resource, note that for k8s version <1.15, apiVersion in the file should be changed to extensions/v1beta1
+# deploy k8s ingress resource
 kubectl apply -f samples/ingress.yaml
 
 # wait awhile then run
@@ -56,7 +56,7 @@ Open another terminal, change value of RESPONSE_BODY in samples/http-text-respon
 ```
 kubctl apply -f samples/http-text-response.yaml
 cat <<EOF | kubectl apply -f -
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: https-ingress
@@ -72,14 +72,14 @@ spec:
 EOF
 ```
 
-Note that you need to change host and path value to the value in your cerbot output. For k8s version <1.15, apiVersion should be changed to extensions/v1beta1
+Note that you need to change host and path value to the value in your cerbot output. 
 
 After running above commands, switch to cerbot terminal, press ENTER to let command conntinue, cerbot will generate the tls secrets to file. Then run follwing command:
  ```
  kubectl create secret tls ingressgateway-certs   --key certbot/live/(your host name)/privkey.pem --cert certbot/live/(your host name)/fullchain.pem
  
 cat <<EOF | kubectl apply -f -
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: https-ingress
