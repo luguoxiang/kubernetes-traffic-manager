@@ -3,11 +3,11 @@ package cluster
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	duration "github.com/golang/protobuf/ptypes/duration"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"strings"
-	"time"
 )
 
 type StaticClusterInfo struct {
@@ -24,7 +24,9 @@ func NewStaticClusterInfo(ip string, port uint32, nodeId string) *StaticClusterI
 		Port:   port,
 		NodeId: nodeId,
 	}
-	info.ConnectionTimeout = time.Duration(60*1000) * time.Millisecond
+	info.ConnectionTimeout = &duration.Duration{
+		Seconds: 60,
+	}
 	return info
 }
 
@@ -44,24 +46,24 @@ func (info *StaticClusterInfo) Type() string {
 	return common.ClusterResource
 }
 
-func (info *StaticClusterInfo) CreateCluster() *v2.Cluster {
+func (info *StaticClusterInfo) CreateCluster() *envoy_api_v2.Cluster {
 
-	result := &v2.Cluster{
+	result := &envoy_api_v2.Cluster{
 		Name:           info.Name(),
 		ConnectTimeout: info.ConnectionTimeout,
-		ClusterDiscoveryType: &v2.Cluster_Type{
-			Type: v2.Cluster_STATIC,
+		ClusterDiscoveryType: &envoy_api_v2.Cluster_Type{
+			Type: envoy_api_v2.Cluster_STATIC,
 		},
-		LoadAssignment: &v2.ClusterLoadAssignment{
+		LoadAssignment: &envoy_api_v2.ClusterLoadAssignment{
 			ClusterName: info.Name(),
-			Endpoints: []endpoint.LocalityLbEndpoints{{
-				LbEndpoints: []endpoint.LbEndpoint{{
+			Endpoints: []*endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []*endpoint.LbEndpoint{{
 					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
 						Endpoint: &endpoint.Endpoint{
 							Address: &core.Address{
 								Address: &core.Address_SocketAddress{
 									SocketAddress: &core.SocketAddress{
-										Protocol: core.TCP,
+										Protocol: core.SocketAddress_TCP,
 										Address:  info.IP,
 										PortSpecifier: &core.SocketAddress_PortValue{
 											PortValue: uint32(info.Port),

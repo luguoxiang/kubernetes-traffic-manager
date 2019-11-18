@@ -3,8 +3,8 @@ package envoy
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
@@ -61,7 +61,7 @@ func (sds *SecretsControlPlaneService) SecretUpdated(oldSecret, newSecret *kuber
 	sds.SecretAdded(newSecret)
 }
 
-func (sds *SecretsControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (sds *SecretsControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*envoy_api_v2.DiscoveryResponse, error) {
 	var secrets []proto.Message
 
 	for _, resource := range resourceMap {

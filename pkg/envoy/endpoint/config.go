@@ -2,9 +2,9 @@ package endpoint
 
 import (
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	"github.com/gogo/protobuf/types"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 )
 
@@ -62,7 +62,7 @@ func (info *EndpointInfo) CreateLoadBalanceEndpoint(port uint32) *endpoint.LbEnd
 				Address: &core.Address{
 					Address: &core.Address_SocketAddress{
 						SocketAddress: &core.SocketAddress{
-							Protocol: core.TCP,
+							Protocol: core.SocketAddress_TCP,
 							Address:  info.PodIP,
 							PortSpecifier: &core.SocketAddress_PortValue{
 								PortValue: port,
@@ -72,7 +72,7 @@ func (info *EndpointInfo) CreateLoadBalanceEndpoint(port uint32) *endpoint.LbEnd
 				},
 			},
 		},
-		LoadBalancingWeight: &types.UInt32Value{
+		LoadBalancingWeight: &wrappers.UInt32Value{
 			Value: info.Weight,
 		},
 	}

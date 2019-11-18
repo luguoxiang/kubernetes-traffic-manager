@@ -7,7 +7,7 @@
   version = "1.2.0"
 
 [[constraint]]
-  version = "v0.8.2"
+  version = "v0.9.1"
   name = "github.com/envoyproxy/go-control-plane"
 
 [[override]]

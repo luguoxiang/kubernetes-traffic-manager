@@ -2,7 +2,7 @@ package ingress
 
 import (
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/listener"
@@ -57,10 +57,10 @@ func (info *IngressHttpInfo) String() string {
 	return info.Name()
 }
 
-func (info *IngressHttpInfo) CreateRoute() route.Route {
+func (info *IngressHttpInfo) CreateRoute() *route.Route {
 	routeAction := info.CreateRouteAction(info.GetCluster())
-	return route.Route{
-		Match: route.RouteMatch{
+	return &route.Route{
+		Match: &route.RouteMatch{
 			PathSpecifier: &route.RouteMatch_Prefix{
 				Prefix: info.Path,
 			},

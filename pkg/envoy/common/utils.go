@@ -3,8 +3,8 @@ package common
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
+	"github.com/golang/protobuf/ptypes/any"
 )
 
 func ContainsResource(resourceNames []string, resource string) bool {
@@ -19,8 +19,8 @@ func ContainsResource(resourceNames []string, resource string) bool {
 	return empty
 }
 
-func MakeResource(resources []proto.Message, typeURL string, version string) (*v2.DiscoveryResponse, error) {
-	var resoureList []types.Any
+func MakeResource(resources []proto.Message, typeURL string, version string) (*envoy_api_v2.DiscoveryResponse, error) {
+	var resoureList []*any.Any
 	for _, resource := range resources {
 		data, err := proto.Marshal(resource)
 		if err != nil {
@@ -28,14 +28,14 @@ func MakeResource(resources []proto.Message, typeURL string, version string) (*v
 			return nil, err
 		}
 
-		resourceAny := types.Any{
+		resourceAny := &any.Any{
 			TypeUrl: typeURL,
 			Value:   data,
 		}
 		resoureList = append(resoureList, resourceAny)
 	}
 
-	out := &v2.DiscoveryResponse{
+	out := &envoy_api_v2.DiscoveryResponse{
 		Nonce:       "0",
 		VersionInfo: version,
 		Resources:   resoureList,

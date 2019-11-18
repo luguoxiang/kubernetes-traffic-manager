@@ -3,8 +3,8 @@ package endpoint
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/gogo/protobuf/proto"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
@@ -93,25 +93,25 @@ func (cps *EndpointsControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 
 }
 
-func (cps *EndpointsControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (cps *EndpointsControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*envoy_api_v2.DiscoveryResponse, error) {
 
 	var claList []proto.Message
 	for _, resource := range resourceMap {
 		assignmentInfo := resource.(*ClusterAssignmentInfo)
 
-		var lbEndpoints []endpoint.LbEndpoint
+		var lbEndpoints []*endpoint.LbEndpoint
 		for _, endpointInfo := range assignmentInfo.EndpointMap {
 			lbEndpoint := endpointInfo.CreateLoadBalanceEndpoint(assignmentInfo.Port)
 			if lbEndpoint == nil {
 				continue
 			}
 
-			lbEndpoints = append(lbEndpoints, *lbEndpoint)
+			lbEndpoints = append(lbEndpoints, lbEndpoint)
 		}
 
-		cla := &v2.ClusterLoadAssignment{
+		cla := &envoy_api_v2.ClusterLoadAssignment{
 			ClusterName: assignmentInfo.Name(),
-			Endpoints: []endpoint.LocalityLbEndpoints{{
+			Endpoints: []*endpoint.LocalityLbEndpoints{{
 				LbEndpoints: lbEndpoints,
 			}},
 		}

@@ -2,8 +2,8 @@ package listener
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
@@ -15,7 +15,7 @@ import (
 
 type ListenerInfo interface {
 	common.EnvoyResource
-	CreateFilterChain(node *core.Node) (listener.FilterChain, error)
+	CreateFilterChain(node *core.Node) (*listener.FilterChain, error)
 }
 
 type ListenersControlPlaneService struct {
@@ -120,8 +120,8 @@ func (cps *ListenersControlPlaneService) PodUpdated(oldPod, newPod *kubernetes.P
 	}
 }
 
-func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
-	var filterChains []listener.FilterChain
+func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*envoy_api_v2.DiscoveryResponse, error) {
+	var filterChains []*listener.FilterChain
 
 	for _, resource := range resourceMap {
 		listenerInfo := resource.(ListenerInfo)
@@ -130,7 +130,7 @@ func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]co
 		if err != nil {
 			return nil, err
 		}
-		if fc.Filters == nil {
+		if fc == nil {
 			continue
 		}
 		filterChains = append(filterChains, fc)
@@ -139,12 +139,12 @@ func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]co
 		}
 	}
 
-	l := &v2.Listener{
+	l := &envoy_api_v2.Listener{
 		Name: "mylistener",
-		Address: core.Address{
+		Address: &core.Address{
 			Address: &core.Address_SocketAddress{
 				SocketAddress: &core.SocketAddress{
-					Protocol: core.TCP,
+					Protocol: core.SocketAddress_TCP,
 					Address:  "0.0.0.0",
 					PortSpecifier: &core.SocketAddress_PortValue{
 						PortValue: cps.proxyPort,
@@ -153,11 +153,9 @@ func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]co
 			},
 		},
 		FilterChains: filterChains,
-		ListenerFilters: []listener.ListenerFilter{
-			listener.ListenerFilter{
-				Name: common.ORIGINAL_DST,
-			},
-		},
+		ListenerFilters: []*listener.ListenerFilter{{
+			Name: common.ORIGINAL_DST,
+		}},
 	}
 	return common.MakeResource([]proto.Message{l}, common.ListenerResource, version)
 }

@@ -36,7 +36,7 @@ func NewAggregatedDiscoveryService(cds *cluster.ClustersControlPlaneService,
 		cds: cds, eds: eds, lds: lds, ilds: ilds, sds: sds,
 	}
 }
-func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+func (ads *AggregatedDiscoveryService) processRequest(req *envoy_api_v2.DiscoveryRequest) (*envoy_api_v2.DiscoveryResponse, error) {
 	switch req.TypeUrl {
 	case common.EndpointResource:
 		return ads.eds.ProcessRequest(req, ads.eds.BuildResource)
@@ -59,7 +59,7 @@ func (ads *AggregatedDiscoveryService) processRequest(req *v2.DiscoveryRequest) 
 
 }
 func (ads *AggregatedDiscoveryService) StreamAggregatedResources(stream discovery.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
-	requestCh := make(chan *v2.DiscoveryRequest)
+	requestCh := make(chan *envoy_api_v2.DiscoveryRequest)
 	go func() {
 		for {
 			req, err := stream.Recv()
@@ -83,7 +83,7 @@ func (ads *AggregatedDiscoveryService) StreamAggregatedResources(stream discover
 		if req == nil {
 			break
 		}
-		go func(req *v2.DiscoveryRequest) {
+		go func(req *envoy_api_v2.DiscoveryRequest) {
 			if glog.V(2) {
 				glog.Infof("Request recevied: type=%s, nonce=%s, version=%s, resource=%s, node=%s",
 					req.TypeUrl, req.GetResponseNonce(), req.VersionInfo, strings.Join(req.ResourceNames, ","), req.Node.Id)

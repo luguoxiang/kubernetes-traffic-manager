@@ -2,12 +2,13 @@ package listener
 
 import (
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 
 	tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
+	"github.com/golang/protobuf/ptypes"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
@@ -44,32 +45,32 @@ func (info *ClusterIpFilterInfo) ClusterName() string {
 	return cluster.ServiceClusterName(info.service, info.namespace, info.port)
 }
 
-func (info *ClusterIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *ClusterIpFilterInfo) CreateFilterChain(node *core.Node) (*listener.FilterChain, error) {
 	tcpProxy := &tcp.TcpProxy{
 		StatPrefix: info.Name(),
 		ClusterSpecifier: &tcp.TcpProxy_Cluster{
 			Cluster: info.ClusterName(),
 		},
 	}
-	filterConfig, err := types.MarshalAny(tcpProxy)
+	filterConfig, err := ptypes.MarshalAny(tcpProxy)
 	if err != nil {
 		glog.Warningf("MarshalAny tcp.TcpProxy failed: %s", err.Error())
-		return listener.FilterChain{}, err
+		return nil, err
 	}
 
 	if info.clusterIP == "" || info.clusterIP == "None" {
-		return listener.FilterChain{}, nil
+		return nil, nil
 	}
-	return listener.FilterChain{
+	return &listener.FilterChain{
 		FilterChainMatch: &listener.FilterChainMatch{
-			DestinationPort: &types.UInt32Value{Value: info.port},
+			DestinationPort: &wrappers.UInt32Value{Value: info.port},
 			PrefixRanges: []*core.CidrRange{&core.CidrRange{
 				AddressPrefix: info.clusterIP,
-				PrefixLen:     &types.UInt32Value{Value: 32},
+				PrefixLen:     &wrappers.UInt32Value{Value: 32},
 			},
 			},
 		},
-		Filters: []listener.Filter{{
+		Filters: []*listener.Filter{{
 			Name:       common.TCPProxy,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},

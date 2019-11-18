@@ -2,10 +2,11 @@ package listener
 
 import (
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	tp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
@@ -43,28 +44,28 @@ func (info *PodIpFilterInfo) getStaticClusterName(nodeId string) string {
 	return cluster.StaticClusterName(info.podIP, info.port)
 }
 
-func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *PodIpFilterInfo) CreateFilterChain(node *core.Node) (*listener.FilterChain, error) {
 	clusterName := info.getStaticClusterName(node.Id)
 
-	filterConfig, err := types.MarshalAny(&tp.TcpProxy{
+	filterConfig, err := ptypes.MarshalAny(&tp.TcpProxy{
 		StatPrefix: info.Name(),
 		ClusterSpecifier: &tp.TcpProxy_Cluster{
 			Cluster: clusterName,
 		},
 	})
 	if err != nil {
-		return listener.FilterChain{}, err
+		return nil, err
 	}
-	return listener.FilterChain{
+	return &listener.FilterChain{
 		FilterChainMatch: &listener.FilterChainMatch{
-			DestinationPort: &types.UInt32Value{Value: info.port},
+			DestinationPort: &wrappers.UInt32Value{Value: info.port},
 			PrefixRanges: []*core.CidrRange{&core.CidrRange{
 				AddressPrefix: info.podIP,
-				PrefixLen:     &types.UInt32Value{Value: 32},
+				PrefixLen:     &wrappers.UInt32Value{Value: 32},
 			},
 			},
 		},
-		Filters: []listener.Filter{{
+		Filters: []*listener.Filter{{
 			Name:       common.TCPProxy,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},

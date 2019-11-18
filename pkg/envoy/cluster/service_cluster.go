@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"strings"
@@ -35,7 +35,7 @@ func (info *ServiceClusterInfo) Config(config map[string]string) {
 
 	v := config["traffic.lb.policy"]
 	if v != "" {
-		info.LbPolicy = v2.Cluster_LbPolicy_value[v]
+		info.LbPolicy = envoy_api_v2.Cluster_LbPolicy_value[v]
 	}
 }
 
@@ -51,21 +51,21 @@ func (info *ServiceClusterInfo) Type() string {
 	return common.ClusterResource
 }
 
-func (info *ServiceClusterInfo) CreateCluster() *v2.Cluster {
-	result := &v2.Cluster{
+func (info *ServiceClusterInfo) CreateCluster() *envoy_api_v2.Cluster {
+	result := &envoy_api_v2.Cluster{
 		Name:           info.Name(),
 		ConnectTimeout: info.ConnectionTimeout,
-		ClusterDiscoveryType: &v2.Cluster_Type{
-			Type: v2.Cluster_EDS,
+		ClusterDiscoveryType: &envoy_api_v2.Cluster_Type{
+			Type: envoy_api_v2.Cluster_EDS,
 		},
-		EdsClusterConfig: &v2.Cluster_EdsClusterConfig{
+		EdsClusterConfig: &envoy_api_v2.Cluster_EdsClusterConfig{
 			EdsConfig: &core.ConfigSource{
 				ConfigSourceSpecifier: &core.ConfigSource_Ads{
 					Ads: &core.AggregatedConfigSource{},
 				},
 			},
 		},
-		LbPolicy: v2.Cluster_LbPolicy(info.LbPolicy),
+		LbPolicy: envoy_api_v2.Cluster_LbPolicy(info.LbPolicy),
 	}
 	info.ApplyClusterConfig(result)
 	return result

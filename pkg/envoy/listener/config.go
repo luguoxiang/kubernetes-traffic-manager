@@ -2,26 +2,27 @@ package listener
 
 import (
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	httpfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	_type "github.com/envoyproxy/go-control-plane/envoy/type"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
+	"github.com/golang/protobuf/ptypes"
+	duration "github.com/golang/protobuf/ptypes/duration"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
-	"time"
 )
 
 type HttpListenerConfigInfo struct {
 	Tracing        bool
-	RequestTimeout time.Duration
+	RequestTimeout *duration.Duration
 	RetryOn        string
 	RetryTimes     uint32
 
 	FaultInjectionFixDelayPercentage uint32
-	FaultInjectionFixDelay           time.Duration
+	FaultInjectionFixDelay           *duration.Duration
 
 	FaultInjectionAbortPercentage uint32
 	FaultInjectionAbortStatus     uint32
@@ -31,7 +32,7 @@ type HttpListenerConfigInfo struct {
 
 	HashCookieName string
 	HashHeaderName string
-	HashCookieTTL  time.Duration
+	HashCookieTTL  *duration.Duration
 }
 
 func NeedServiceToPodAnnotation(label string) bool {
@@ -65,7 +66,6 @@ func NeedServiceToPodAnnotation(label string) bool {
 
 func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 	info.FaultInjectionAbortStatus = 503
-	info.FaultInjectionFixDelay = time.Second
 	info.TraceSamplingPercent = 100
 	for k, v := range config {
 		if v == "" {
@@ -77,7 +77,9 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 		case "traffic.hash.header.name":
 			info.HashHeaderName = v
 		case "traffic.hash.cookie.ttl":
-			info.HashCookieTTL = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
+			info.HashCookieTTL = &duration.Duration{
+				Seconds: kubernetes.GetLabelValueInt64(v),
+			}
 
 		case "traffic.tracing.enabled":
 			info.Tracing = kubernetes.GetLabelValueBool(v)
@@ -85,7 +87,11 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 			info.TraceSamplingPercent = kubernetes.GetLabelValueFloat64(v)
 
 		case "traffic.request.timeout":
-			info.RequestTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
+			value := kubernetes.GetLabelValueInt64(v)
+			info.RequestTimeout = &duration.Duration{
+				Seconds: value / 1e9,
+				Nanos:   int32(value % 1e9),
+			}
 		case "traffic.retries.5xx":
 			info.RetryOn = "5xx"
 			info.RetryTimes = kubernetes.GetLabelValueUInt32(v)
@@ -96,7 +102,11 @@ func (info *HttpListenerConfigInfo) Config(config map[string]string) {
 			info.RetryOn = "gateway-error"
 			info.RetryTimes = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.fault.delay.time":
-			info.FaultInjectionFixDelay = time.Duration(kubernetes.GetLabelValueUInt32(v)) * time.Millisecond
+			value := kubernetes.GetLabelValueInt64(v)
+			info.FaultInjectionFixDelay = &duration.Duration{
+				Seconds: value / 1e9,
+				Nanos:   int32(value % 1e9),
+			}
 		case "traffic.fault.delay.percentage":
 			info.FaultInjectionFixDelayPercentage = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.fault.abort.status":
@@ -120,8 +130,8 @@ func (info *HttpListenerConfigInfo) CreateRouteAction(cluster string) *route.Rou
 		cookie := &route.RouteAction_HashPolicy_Cookie{
 			Name: info.HashCookieName,
 		}
-		if info.HashCookieTTL != 0 {
-			cookie.Ttl = &info.HashCookieTTL
+		if info.HashCookieTTL != nil {
+			cookie.Ttl = info.HashCookieTTL
 		}
 		routeAction.HashPolicy = append(routeAction.HashPolicy,
 			&route.RouteAction_HashPolicy{
@@ -143,20 +153,20 @@ func (info *HttpListenerConfigInfo) CreateRouteAction(cluster string) *route.Rou
 	if info.RetryOn != "" {
 		routeAction.RetryPolicy = &route.RetryPolicy{
 			RetryOn:    info.RetryOn,
-			NumRetries: &types.UInt32Value{Value: info.RetryTimes}}
+			NumRetries: &wrappers.UInt32Value{Value: info.RetryTimes}}
 	}
-	if info.RequestTimeout > 0 {
-		routeAction.Timeout = &info.RequestTimeout
+	if info.RequestTimeout != nil {
+		routeAction.Timeout = info.RequestTimeout
 	}
 	return routeAction
 }
 
-func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []string) route.VirtualHost {
-	return route.VirtualHost{
+func (info *HttpListenerConfigInfo) CreateVirtualHost(cluster string, domains []string) *route.VirtualHost {
+	return &route.VirtualHost{
 		Name:    fmt.Sprintf("%s_vh", cluster),
 		Domains: domains,
-		Routes: []route.Route{{
-			Match: route.RouteMatch{
+		Routes: []*route.Route{{
+			Match: &route.RouteMatch{
 				PathSpecifier: &route.RouteMatch_Prefix{
 					Prefix: "/",
 				},
@@ -172,7 +182,7 @@ func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpCon
 
 	if info.Tracing {
 		manager.Tracing = &hcm.HttpConnectionManager_Tracing{
-			OperationName: hcm.EGRESS,
+			OperationName: hcm.HttpConnectionManager_Tracing_EGRESS,
 		}
 		manager.Tracing.OverallSampling = &_type.Percent{
 			Value: info.TraceSamplingPercent,
@@ -181,11 +191,11 @@ func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpCon
 
 	faultConfig := &httpfault.HTTPFault{}
 	changed := false
-	if info.FaultInjectionFixDelayPercentage > 0 {
+	if info.FaultInjectionFixDelayPercentage > 0 && info.FaultInjectionFixDelay != nil {
 		faultConfig.Delay = &fault.FaultDelay{
 			Type: fault.FaultDelay_FIXED,
 			FaultDelaySecifier: &fault.FaultDelay_FixedDelay{
-				FixedDelay: &info.FaultInjectionFixDelay,
+				FixedDelay: info.FaultInjectionFixDelay,
 			},
 			Percentage: &_type.FractionalPercent{
 				Numerator:   info.FaultInjectionFixDelayPercentage,
@@ -217,7 +227,7 @@ func (info *HttpListenerConfigInfo) ConfigConnectionManager(manager *hcm.HttpCon
 		changed = true
 	}
 	if changed {
-		filterConfigStruct, err := types.MarshalAny(faultConfig)
+		filterConfigStruct, err := ptypes.MarshalAny(faultConfig)
 		if err != nil {
 			glog.Warningf("Failed to MarshalAny HTTPFault: %s", err.Error())
 			panic(err.Error())

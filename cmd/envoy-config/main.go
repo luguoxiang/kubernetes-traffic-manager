@@ -16,8 +16,8 @@ import (
 )
 
 type StreamClient interface {
-	Send(*v2.DiscoveryRequest) error
-	Recv() (*v2.DiscoveryResponse, error)
+	Send(*envoy_api_v2.DiscoveryRequest) error
+	Recv() (*envoy_api_v2.DiscoveryResponse, error)
 }
 
 type StreamFunction func(cc *grpc.ClientConn) (StreamClient, error)
@@ -55,7 +55,7 @@ func main() {
 
 	fmt.Println("client")
 
-	var request v2.DiscoveryRequest
+	var request envoy_api_v2.DiscoveryRequest
 	request.TypeUrl = typeUrl
 	if resource != "" {
 		request.ResourceNames = []string{resource}
@@ -74,22 +74,22 @@ func main() {
 	for _, resource := range response.Resources {
 
 		if typeUrl == envoy.EndpointResource {
-			data := &v2.ClusterLoadAssignment{}
+			data := &envoy_api_v2.ClusterLoadAssignment{}
 			proto.Unmarshal(resource.Value, data)
 			fmt.Printf("------%s--------\n", data.ClusterName)
 			client.DoPrint(data)
 		} else if typeUrl == envoy.ClusterResource {
-			data := &v2.Cluster{}
+			data := &envoy_api_v2.Cluster{}
 			proto.Unmarshal(resource.Value, data)
 			fmt.Printf("------%s--------\n", data.Name)
 			client.DoPrint(data)
 		} else if typeUrl == envoy.RouteResource {
-			data := &v2.RouteConfiguration{}
+			data := &envoy_api_v2.RouteConfiguration{}
 			proto.Unmarshal(resource.Value, data)
 			fmt.Printf("------%s--------\n", data.Name)
 			client.DoPrint(data)
 		} else if typeUrl == envoy.ListenerResource {
-			data := &v2.Listener{}
+			data := &envoy_api_v2.Listener{}
 			proto.Unmarshal(resource.Value, data)
 			fmt.Printf("------%s--------\n", data.Name)
 			client.DoPrint(data)

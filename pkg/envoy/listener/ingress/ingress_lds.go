@@ -3,14 +3,14 @@ package ingress
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/glog"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
 	"os"
@@ -138,12 +138,12 @@ func (cps *IngressListenersControlPlaneService) ServiceUpdated(oldService, newSe
 	cps.ServiceAdded(newService)
 }
 
-func (cps *IngressListenersControlPlaneService) createFilters(virtualHosts []route.VirtualHost, pathList []*IngressHttpInfo) []listener.Filter {
+func (cps *IngressListenersControlPlaneService) createFilters(virtualHosts []*route.VirtualHost, pathList []*IngressHttpInfo) []*listener.Filter {
 	manager := &hcm.HttpConnectionManager{
-		CodecType:  hcm.AUTO,
+		CodecType:  hcm.HttpConnectionManager_AUTO,
 		StatPrefix: "traffic-ingress",
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: &v2.RouteConfiguration{
+			RouteConfig: &envoy_api_v2.RouteConfiguration{
 				Name:         "traffic-ingress",
 				VirtualHosts: virtualHosts,
 			},
@@ -168,22 +168,22 @@ func (cps *IngressListenersControlPlaneService) createFilters(virtualHosts []rou
 		//multiple ingress config in same connection manager is ignored
 		pathList[0].ConfigConnectionManager(manager)
 	}
-	filterConfig, err := types.MarshalAny(manager)
+	filterConfig, err := ptypes.MarshalAny(manager)
 	if err != nil {
 		glog.Warningf("Failed to MarshalAny HttpConnectionManager: %s", err.Error())
 		panic(err.Error())
 	}
 
-	return []listener.Filter{{
+	return []*listener.Filter{{
 		Name:       common.HTTPConnectionManager,
 		ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 	}}
 
 }
 
-func (cps *IngressListenersControlPlaneService) createHttpFilterChain(pathList []*IngressHttpInfo) listener.FilterChain {
-	var virtualHosts []route.VirtualHost
-	var routes []route.Route
+func (cps *IngressListenersControlPlaneService) createHttpFilterChain(pathList []*IngressHttpInfo) *listener.FilterChain {
+	var virtualHosts []*route.VirtualHost
+	var routes []*route.Route
 	for index, info := range pathList {
 		if index > 0 && info.Path == pathList[index-1].Path && info.Host == pathList[index-1].Host {
 			//ignore same host and path
@@ -192,7 +192,7 @@ func (cps *IngressListenersControlPlaneService) createHttpFilterChain(pathList [
 
 		routes = append(routes, info.CreateRoute())
 		if index == len(pathList)-1 || info.Host != pathList[index+1].Host {
-			virtualHosts = append(virtualHosts, route.VirtualHost{
+			virtualHosts = append(virtualHosts, &route.VirtualHost{
 				Name:    IngressName(info.Host),
 				Domains: []string{info.Host},
 				Routes:  routes,
@@ -201,12 +201,12 @@ func (cps *IngressListenersControlPlaneService) createHttpFilterChain(pathList [
 		}
 	}
 
-	return listener.FilterChain{
+	return &listener.FilterChain{
 		Filters: cps.createFilters(virtualHosts, pathList),
 	}
 }
-func (cps *IngressListenersControlPlaneService) createTlsHttpFilterChain(host string, pathList []*IngressHttpInfo) listener.FilterChain {
-	var routes []route.Route
+func (cps *IngressListenersControlPlaneService) createTlsHttpFilterChain(host string, pathList []*IngressHttpInfo) *listener.FilterChain {
+	var routes []*route.Route
 	secrets := make(map[string]bool)
 
 	for _, info := range pathList {
@@ -214,7 +214,7 @@ func (cps *IngressListenersControlPlaneService) createTlsHttpFilterChain(host st
 		secrets[info.Secret] = true
 
 	}
-	virtualHost := route.VirtualHost{
+	virtualHost := &route.VirtualHost{
 		Name:    IngressName(host),
 		Domains: []string{host},
 		Routes:  routes,
@@ -231,13 +231,13 @@ func (cps *IngressListenersControlPlaneService) createTlsHttpFilterChain(host st
 			},
 		})
 	}
-	return listener.FilterChain{
+	return &listener.FilterChain{
 		FilterChainMatch: &listener.FilterChainMatch{
 			ServerNames:       []string{host},
 			TransportProtocol: "tls",
 		},
 
-		Filters: cps.createFilters([]route.VirtualHost{virtualHost}, pathList),
+		Filters: cps.createFilters([]*route.VirtualHost{virtualHost}, pathList),
 
 		TlsContext: &auth.DownstreamTlsContext{
 			CommonTlsContext: &auth.CommonTlsContext{
@@ -247,7 +247,7 @@ func (cps *IngressListenersControlPlaneService) createTlsHttpFilterChain(host st
 	}
 }
 
-func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*envoy_api_v2.DiscoveryResponse, error) {
 
 	pathListWithSecret := make(map[string][]*IngressHttpInfo)
 	var pathListWithoutSecret []*IngressHttpInfo
@@ -267,7 +267,7 @@ func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[st
 
 	}
 
-	var filterChains []listener.FilterChain
+	var filterChains []*listener.FilterChain
 
 	for host, pathList := range pathListWithSecret {
 		SortIngressHttpInfo(pathList)
@@ -280,12 +280,12 @@ func (cps *IngressListenersControlPlaneService) BuildResource(resourceMap map[st
 		filterChains = append(filterChains, cps.createHttpFilterChain(pathListWithoutSecret))
 	}
 
-	l := &v2.Listener{
+	l := &envoy_api_v2.Listener{
 		Name: "ingress_listener",
-		Address: core.Address{
+		Address: &core.Address{
 			Address: &core.Address_SocketAddress{
 				SocketAddress: &core.SocketAddress{
-					Protocol: core.TCP,
+					Protocol: core.SocketAddress_TCP,
 					Address:  "0.0.0.0",
 					PortSpecifier: &core.SocketAddress_PortValue{
 						PortValue: cps.proxyPort,

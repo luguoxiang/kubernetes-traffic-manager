@@ -3,11 +3,12 @@ package listener
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/cluster"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
@@ -44,8 +45,8 @@ func (info *HttpPodIpFilterInfo) String() string {
 	return fmt.Sprintf("%s:%d, tracing=%v", info.podIP, info.port, info.Tracing)
 }
 
-func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string) []route.VirtualHost {
-	var virtualHosts []route.VirtualHost
+func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string) []*route.VirtualHost {
+	var virtualHosts []*route.VirtualHost
 
 	staticCluster := info.getStaticClusterName(nodeId)
 
@@ -66,13 +67,13 @@ func (info *HttpPodIpFilterInfo) CreateVirtualHosts(nodeId string) []route.Virtu
 	return virtualHosts
 }
 
-func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.FilterChain, error) {
+func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (*listener.FilterChain, error) {
 
 	manager := &hcm.HttpConnectionManager{
-		CodecType:  hcm.AUTO,
+		CodecType:  hcm.HttpConnectionManager_AUTO,
 		StatPrefix: info.Name(),
 		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: &v2.RouteConfiguration{
+			RouteConfig: &envoy_api_v2.RouteConfiguration{
 				Name:         info.Name(),
 				VirtualHosts: info.CreateVirtualHosts(node.Id),
 			},
@@ -84,20 +85,20 @@ func (info *HttpPodIpFilterInfo) CreateFilterChain(node *core.Node) (listener.Fi
 		Name: common.RouterHttpFilter,
 	})
 
-	filterConfig, err := types.MarshalAny(manager)
+	filterConfig, err := ptypes.MarshalAny(manager)
 	if err != nil {
-		return listener.FilterChain{}, err
+		return nil, err
 	}
-	return listener.FilterChain{
+	return &listener.FilterChain{
 		FilterChainMatch: &listener.FilterChainMatch{
-			DestinationPort: &types.UInt32Value{Value: info.port},
+			DestinationPort: &wrappers.UInt32Value{Value: info.port},
 			PrefixRanges: []*core.CidrRange{&core.CidrRange{
 				AddressPrefix: info.podIP,
-				PrefixLen:     &types.UInt32Value{Value: 32},
+				PrefixLen:     &wrappers.UInt32Value{Value: 32},
 			},
 			},
 		},
-		Filters: []listener.Filter{{
+		Filters: []*listener.Filter{{
 			Name:       common.HTTPConnectionManager,
 			ConfigType: &listener.Filter_TypedConfig{TypedConfig: filterConfig},
 		}},

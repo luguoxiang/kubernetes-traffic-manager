@@ -3,9 +3,9 @@ package cluster
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	"github.com/gogo/protobuf/types"
+	duration "github.com/golang/protobuf/ptypes/duration"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
-	"time"
 )
 
 type ClusterConfigInfo struct {
@@ -13,7 +13,7 @@ type ClusterConfigInfo struct {
 	MaxConnections     uint32
 	MaxPendingRequests uint32
 	MaxRequests        uint32
-	ConnectionTimeout  time.Duration
+	ConnectionTimeout  *duration.Duration
 }
 
 func NeedServiceToPodAnnotation(label string) bool {
@@ -35,14 +35,22 @@ func NeedServiceToPodAnnotation(label string) bool {
 }
 
 func (info *ClusterConfigInfo) Config(config map[string]string) {
-	info.ConnectionTimeout = time.Duration(60*1000) * time.Millisecond
+	info.ConnectionTimeout = &duration.Duration{
+		Seconds: 60,
+	}
 	for k, v := range config {
 		if v == "" {
 			continue
 		}
 		switch k {
 		case "traffic.connection.timeout":
-			info.ConnectionTimeout = time.Duration(kubernetes.GetLabelValueInt64(v)) * time.Millisecond
+			value := kubernetes.GetLabelValueInt64(v)
+			info.ConnectionTimeout =
+				&duration.Duration{
+					Seconds: value / 1e9,
+					Nanos:   int32(value % 1e9),
+				}
+
 		case "traffic.retries.max":
 			info.MaxRetries = kubernetes.GetLabelValueUInt32(v)
 		case "traffic.connection.max":
@@ -55,36 +63,36 @@ func (info *ClusterConfigInfo) Config(config map[string]string) {
 	}
 }
 
-func (info *ClusterConfigInfo) ApplyClusterConfig(clusterInfo *v2.Cluster) {
-	var threshold cluster.CircuitBreakers_Thresholds
+func (info *ClusterConfigInfo) ApplyClusterConfig(clusterInfo *envoy_api_v2.Cluster) {
+	var threshold envoy_api_v2_cluster.CircuitBreakers_Thresholds
 	var hasCircuitBreaker bool
 	if info.MaxConnections > 0 {
-		threshold.MaxConnections = &types.UInt32Value{
+		threshold.MaxConnections = &wrappers.UInt32Value{
 			Value: info.MaxConnections,
 		}
 		hasCircuitBreaker = true
 	}
 	if info.MaxPendingRequests > 0 {
-		threshold.MaxPendingRequests = &types.UInt32Value{
+		threshold.MaxPendingRequests = &wrappers.UInt32Value{
 			Value: info.MaxPendingRequests,
 		}
 		hasCircuitBreaker = true
 	}
 	if info.MaxRequests > 0 {
-		threshold.MaxRequests = &types.UInt32Value{
+		threshold.MaxRequests = &wrappers.UInt32Value{
 			Value: info.MaxRequests,
 		}
 		hasCircuitBreaker = true
 	}
 	if info.MaxRetries > 0 {
-		threshold.MaxRetries = &types.UInt32Value{
+		threshold.MaxRetries = &wrappers.UInt32Value{
 			Value: info.MaxRetries,
 		}
 		hasCircuitBreaker = true
 	}
 	if hasCircuitBreaker {
-		clusterInfo.CircuitBreakers = &cluster.CircuitBreakers{
-			Thresholds: []*cluster.CircuitBreakers_Thresholds{&threshold},
+		clusterInfo.CircuitBreakers = &envoy_api_v2_cluster.CircuitBreakers{
+			Thresholds: []*envoy_api_v2_cluster.CircuitBreakers_Thresholds{&threshold},
 		}
 	}
 }

@@ -2,7 +2,7 @@ package common
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	"crypto/md5"
 	"encoding/hex"
@@ -24,8 +24,8 @@ type EnvoyResourceClonable interface {
 	Clone() EnvoyResourceClonable
 }
 type stream interface {
-	Send(*v2.DiscoveryResponse) error
-	Recv() (*v2.DiscoveryRequest, error)
+	Send(*envoy_api_v2.DiscoveryResponse) error
+	Recv() (*envoy_api_v2.DiscoveryRequest, error)
 }
 
 type ControlPlaneService struct {
@@ -146,9 +146,9 @@ func (cps *ControlPlaneService) UpdateResource(resource EnvoyResource, resourceV
 	cps.cond.Broadcast()
 }
 
-type ResponseBuilder func(resourceMap map[string]EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error)
+type ResponseBuilder func(resourceMap map[string]EnvoyResource, version string, node *core.Node) (*envoy_api_v2.DiscoveryResponse, error)
 
-func (cps *ControlPlaneService) ProcessRequest(req *v2.DiscoveryRequest, builder ResponseBuilder) (*v2.DiscoveryResponse, error) {
+func (cps *ControlPlaneService) ProcessRequest(req *envoy_api_v2.DiscoveryRequest, builder ResponseBuilder) (*envoy_api_v2.DiscoveryResponse, error) {
 	cps.k8sManager.Lock()
 
 	var currentVersion string

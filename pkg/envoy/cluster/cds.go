@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/proto"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/kubernetes"
@@ -11,7 +11,7 @@ import (
 
 type ClusterInfo interface {
 	common.EnvoyResource
-	CreateCluster() *v2.Cluster
+	CreateCluster() *envoy_api_v2.Cluster
 }
 
 type ClustersControlPlaneService struct {
@@ -22,13 +22,13 @@ func NewClustersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) *
 	return &ClustersControlPlaneService{ControlPlaneService: common.NewControlPlaneService(k8sManager)}
 }
 
-func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*v2.DiscoveryResponse, error) {
+func (cps *ClustersControlPlaneService) BuildResource(resourceMap map[string]common.EnvoyResource, version string, node *core.Node) (*envoy_api_v2.DiscoveryResponse, error) {
 	var clusters []proto.Message
 
 	for _, resource := range resourceMap {
 		clusterInfo := resource.(ClusterInfo)
 		serviceCluster := clusterInfo.CreateCluster()
-		if serviceCluster.ConnectTimeout == 0 {
+		if serviceCluster.ConnectTimeout == nil {
 			panic(fmt.Sprintf("cluster %s connect timeout should not be zero", serviceCluster.Name))
 		}
 		clusters = append(clusters, serviceCluster)

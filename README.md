@@ -116,7 +116,7 @@ curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_
 |----------|--------|---------|--------------|
 | Service | traffic.lb.policy | ROUND_ROBIN | load balance policy: ROUND_ROBIN, LEAST_REQUEST, RING_HASH, RANDOM, MAGLEV | 
 | Service | traffic.hash.cookie.name | "" | cookie hash policy |
-| Service | traffic.hash.cookie.ttl | 0 | generate cookie with ttl |
+| Service | traffic.hash.cookie.ttl | 0 | generate cookie with ttl (seconds)|
 | Service | traffic.hash.header.name | "" | http header name for hash policy |
 | Pod, Deployment, StatefulSet, DaemonSet | traffic.endpoint.weight | 100 | weight value for related pods [0-128]  |
 
@@ -178,7 +178,7 @@ curl -G http://${INGRESS_IP}/api/v1/query --data-urlencode "query=envoy_cluster_
 
 | Resource | Labels | Default | Description |
 |----------|--------|---------|--------------|
-| Pod, Service | traffic.fault.delay.time | 0 | delay time in miliseconds |
+| Pod, Service | traffic.fault.delay.time | 0 | delay time in nanoseconds |
 | Pod, Service | traffic.fault.delay.percentage | 0 | percentage of requests to be delayed for time |
 | Pod, Service | traffic.fault.abort.status | 0 | abort with http status |
 | Pod, Service | traffic.fault.abort.percentage | 0 | percentage of requests to be aborted |
@@ -277,11 +277,11 @@ node id is pod name and pod namespace, ingress node id is traffic-ingress.
 |----------|--------|---------|--------------|
 | Pod, Deployment, StatefulSet, DaemonSet | traffic.envoy.enabled | false | whether to enable envoy docker for related pods|
 | Pod, Service | traffic.port.(port number)| None| protocol for the port on service (http, tcp, direct)|
-| Pod, Service | traffic.request.timeout | 0 | timeout in miliseconds |0 |
+| Pod, Service | traffic.request.timeout | 0 | timeout in nanoseconds |0 |
 | Pod, Service | traffic.retries.5xx | 0 | number of retries for 5xx error | 
 | Pod, Service | traffic.retries.connect-failure | 0 | number of retries for connect failure |
 | Pod, Service | traffic.retries.gateway-error | 0 | number of retries for gateway error |
-| Service | traffic.connection.timeout |  60000 | timeout in miliseconds  |
+| Service | traffic.connection.timeout |  60 * 1e9| timeout in nanoseconds  |
 
 Note that all the service label configuration requires client pod's envoy enabled.
 
