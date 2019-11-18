@@ -34,12 +34,11 @@ func NewListenersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) 
 	if err != nil {
 		panic("wrong ENVOY_PROXY_PORT value:" + err.Error())
 	}
-	result := &ListenersControlPlaneService{
+	return &ListenersControlPlaneService{
 		ControlPlaneService: common.NewControlPlaneService(k8sManager),
 		proxyPort:           uint32(proxyPort),
 	}
 
-	return result
 }
 
 func (cps *ListenersControlPlaneService) ServiceValid(svc *kubernetes.ServiceInfo) bool {
@@ -136,8 +135,8 @@ func (cps *ListenersControlPlaneService) BuildResource(resourceMap map[string]co
 			glog.Infof("FilterChainMatch %v = %s", fc.FilterChainMatch, listenerInfo.Name())
 		}
 	}
-	notFoundInfo := &BlackHoleFilterInfo{}
-	fc, err := notFoundInfo.CreateFilterChain(node)
+
+	fc, err := CreateBlackHoleFilterChain()
 	if err == nil {
 		filterChains = append(filterChains, fc)
 	}

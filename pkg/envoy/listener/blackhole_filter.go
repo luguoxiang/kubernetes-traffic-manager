@@ -2,7 +2,6 @@ package listener
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
@@ -10,21 +9,7 @@ import (
 	"github.com/luguoxiang/kubernetes-traffic-manager/pkg/envoy/common"
 )
 
-type BlackHoleFilterInfo struct {
-}
-
-func (info *BlackHoleFilterInfo) String() string {
-	return "listener,blackhole"
-}
-
-func (info *BlackHoleFilterInfo) Type() string {
-	return common.ListenerResource
-}
-func (info *BlackHoleFilterInfo) Name() string {
-	return "blackhole"
-}
-
-func (info *BlackHoleFilterInfo) CreateFilterChain(node *core.Node) (*listener.FilterChain, error) {
+func CreateBlackHoleFilterChain() (*listener.FilterChain, error) {
 	manager := &hcm.HttpConnectionManager{
 		CodecType:  hcm.HttpConnectionManager_AUTO,
 		StatPrefix: "http",
