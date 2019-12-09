@@ -153,7 +153,7 @@ func removeValue(oldValue string, value string) (string, bool) {
 			changed = true
 			continue
 		}
-		result = append(result, value)
+		result = append(result, item)
 	}
 	if !changed {
 		return oldValue, false
