@@ -12,6 +12,7 @@ spec:
         app: traffic-monitor
     spec:
       hostNetwork: true
+      serviceAccountName: "traffic-sa"
       containers:
       - name: traffic-monitor
         image: "{{ .Values.images.trafficMonitor }}:{{ .Chart.Version }}"
