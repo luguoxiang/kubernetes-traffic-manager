@@ -30,7 +30,7 @@ func (service *ServiceInfo) Type() ResourceType {
 }
 
 func (service *ServiceInfo) IsIngressHttpPort(port uint32) bool {
-	label := IngressAttrLabel(port, "name")
+	label := IngressAttrLabel(port, "config")
 	return service.Annotations[label] != ""
 }
 func (svc *ServiceInfo) Protocol(port uint32) int {

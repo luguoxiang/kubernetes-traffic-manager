@@ -83,9 +83,6 @@ func (cps *IngressListenersControlPlaneService) ServiceValid(svc *kubernetes.Ser
 
 func (cps *IngressListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
 	for _, port := range svc.Ports {
-		if svc.Annotations[kubernetes.IngressAttrLabel(port.Port, "name")] == "" {
-			continue
-		}
 		configList := svc.Annotations[kubernetes.IngressAttrLabel(port.Port, "config")]
 		secret := svc.Annotations[kubernetes.IngressAttrLabel(port.Port, "secret")]
 		for _, config := range strings.Split(configList, ",") {
@@ -103,17 +100,15 @@ func (cps *IngressListenersControlPlaneService) ServiceAdded(svc *kubernetes.Ser
 }
 
 func (cps *IngressListenersControlPlaneService) ServiceDeleted(svc *kubernetes.ServiceInfo) {
+
 	for _, port := range svc.Ports {
-		name := kubernetes.IngressAttrLabel(port.Port, "name")
-		if name == "" {
-			continue
-		}
-		configList := kubernetes.IngressAttrLabel(port.Port, "config")
+		configList := svc.Annotations[kubernetes.IngressAttrLabel(port.Port, "config")]
 		for _, config := range strings.Split(configList, ",") {
 			pathHost := strings.Split(config, "@")
 			if len(pathHost) != 2 {
 				continue
 			}
+
 			info := NewIngressHttpInfo(pathHost[1], pathHost[0], svc.Name(), svc.Namespace(), port.Port)
 			cps.UpdateResource(info, "")
 		}

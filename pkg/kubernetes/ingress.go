@@ -95,7 +95,6 @@ func NewIngressInfo(ingress *v1beta1.Ingress) *IngressInfo {
 
 func (ingress *IngressInfo) GetServiceAnnotations(hostInfo *IngressHostInfo, clusterInfo *IngressClusterInfo) map[string]string {
 	return map[string]string{
-		IngressAttrLabel(clusterInfo.Port, "name"):   fmt.Sprintf("%s@%s", ingress.name, ingress.namespace),
 		IngressAttrLabel(clusterInfo.Port, "config"): fmt.Sprintf("%s@%s", clusterInfo.Path, hostInfo.Host),
 		IngressAttrLabel(clusterInfo.Port, "secret"): hostInfo.Secret,
 	}
