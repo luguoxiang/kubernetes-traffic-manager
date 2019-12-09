@@ -12,6 +12,7 @@ spec:
       labels:
         app: traffic-prometheus
     spec:
+      serviceAccountName: "traffic-sa"
       containers:
       - name: traffic-prometheus
         image: prom/prometheus:v2.0.0
