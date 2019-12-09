@@ -10,6 +10,12 @@
 # Installation
 ```
 helm install --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
+
+or install with kubernetes-traffic-monitor
+
+helm install --set monitor.enabled=true --name kubernetes-traffic-manager helm/kubernetes-traffic-manager
+
+Note that for helm 3.0, --name is not needed
 ```
 
 # Ingress gateway
