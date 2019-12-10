@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"fmt"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -18,7 +19,8 @@ type IngressListenerInfo interface {
 
 type IngressListenersControlPlaneService struct {
 	*common.ControlPlaneService
-	proxyPort uint32
+	proxyPort  uint32
+	ingressMap map[string]*kubernetes.IngressInfo
 }
 
 func NewIngressListenersControlPlaneService(k8sManager *kubernetes.K8sResourceManager) *IngressListenersControlPlaneService {
@@ -35,6 +37,7 @@ func NewIngressListenersControlPlaneService(k8sManager *kubernetes.K8sResourceMa
 	result := &IngressListenersControlPlaneService{
 		ControlPlaneService: common.NewControlPlaneService(k8sManager),
 		proxyPort:           uint32(proxyPort),
+		ingressMap:          make(map[string]*kubernetes.IngressInfo),
 	}
 
 	return result
@@ -55,6 +58,7 @@ func getNameAndNamespace(svc string, ns string) (string, string) {
 }
 
 func (cps *IngressListenersControlPlaneService) IngressAdded(ingressInfo *kubernetes.IngressInfo) {
+	cps.ingressMap[fmt.Sprintf("%s.%s",ingressInfo.Name(), ingressInfo.Namespace())] = ingressInfo
 	for _, hostInfo := range ingressInfo.HostPathToClusterMap {
 		for _, clusterInfo := range hostInfo.PathMap {
 			svc, ns := getNameAndNamespace(clusterInfo.Service, ingressInfo.Namespace())
@@ -64,6 +68,7 @@ func (cps *IngressListenersControlPlaneService) IngressAdded(ingressInfo *kubern
 	}
 }
 func (cps *IngressListenersControlPlaneService) IngressDeleted(ingressInfo *kubernetes.IngressInfo) {
+	delete(cps.ingressMap, fmt.Sprintf("%s.%s",ingressInfo.Name(), ingressInfo.Namespace()))
 	for _, hostInfo := range ingressInfo.HostPathToClusterMap {
 		for _, clusterInfo := range hostInfo.PathMap {
 			svc, ns := getNameAndNamespace(clusterInfo.Service, ingressInfo.Namespace())
@@ -82,6 +87,16 @@ func (cps *IngressListenersControlPlaneService) ServiceValid(svc *kubernetes.Ser
 }
 
 func (cps *IngressListenersControlPlaneService) ServiceAdded(svc *kubernetes.ServiceInfo) {
+	for _, ingressInfo := range cps.ingressMap {
+		for _, hostInfo := range ingressInfo.HostPathToClusterMap {
+			for _, clusterInfo := range hostInfo.PathMap {
+				name, ns := getNameAndNamespace(clusterInfo.Service, ingressInfo.Namespace())
+				if name == svc.Name() && ns ==svc.Namespace() {
+					cps.GetK8sManager().MergeServiceAnnotation(name, ns, ingressInfo.GetServiceAnnotations(hostInfo, clusterInfo))
+				}
+			}
+		}
+	}
 	for _, port := range svc.Ports {
 		configList := svc.Annotations[kubernetes.IngressAttrLabel(port.Port, "config")]
 		secret := svc.Annotations[kubernetes.IngressAttrLabel(port.Port, "secret")]
